@@ -1,5 +1,7 @@
 # DING! MELBOURNE — Melbourne Tram Typing Game
 
+**Play it here: https://shawn01ee.github.io/ding-melbourne/**
+
 Type the current tram stop name, ring the bell (Enter/Space), and watch the tram
 move to the next stop on a schematic Route 96 map. Milestone 1 build per the
 AI-ready PRD (v0.1, 15 Jul 2026): 5-stop Route 96 fixture, Full Route + 60-second
