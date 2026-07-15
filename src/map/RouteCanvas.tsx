@@ -121,15 +121,24 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
 
       <g className="tram" transform={`translate(${tram.x}, ${tram.y}) rotate(${tram.angleDeg})`}>
         <rect x={-30} y={-14} width={60} height={28} rx={11} fill="#FFFFFF" />
-        <rect x={-26} y={-11} width={52} height={22} rx={8} fill={color} stroke="#17211D" strokeWidth={2} />
-        <rect x={-20} y={-6} width={9} height={8} rx={2} fill="#F6F5EF" />
-        <rect x={-7} y={-6} width={9} height={8} rx={2} fill="#F6F5EF" />
+        {/* Melbourne-livery-inspired (not a replica): off-white body,
+            green end caps, chartreuse doors, charcoal windows */}
+        <rect x={-26} y={-11} width={52} height={22} rx={8} fill="#F7F8F2" />
+        <rect x={-26} y={-11} width={11} height={22} rx={8} fill="#50A83B" />
+        <rect x={-20} y={-11} width={5} height={22} fill="#50A83B" />
+        <rect x={15} y={-11} width={11} height={22} rx={8} fill="#50A83B" />
+        <rect x={15} y={-11} width={5} height={22} fill="#50A83B" />
+        <rect x={-13} y={-11} width={7} height={22} fill="#C3D82E" />
+        <rect x={3} y={-11} width={7} height={22} fill="#C3D82E" />
+        <rect x={-24} y={-6} width={5} height={7} rx={1.5} fill="#17211D" />
+        <rect x={-4} y={-6} width={6} height={8} rx={1.5} fill="#17211D" />
         {/* cab window with a little face so the tram reads as a character */}
-        <rect x={9} y={-7} width={13} height={10} rx={3} fill="#F6F5EF" />
-        <circle cx={13.5} cy={-3.5} r={1.4} fill="#17211D" />
-        <circle cx={18.5} cy={-3.5} r={1.4} fill="#17211D" />
-        <path d="M13 0.5 Q16 3.2 19 0.5" fill="none" stroke="#17211D" strokeWidth={1.4} strokeLinecap="round" />
-        <circle cx={24.5} cy={6.5} r={1.8} fill="#FFE28A" stroke="#17211D" strokeWidth={0.8} />
+        <rect x={17} y={-7} width={7.5} height={10} rx={2} fill="#F6F5EF" />
+        <circle cx={19.2} cy={-3.2} r={1.3} fill="#17211D" />
+        <circle cx={22.4} cy={-3.2} r={1.3} fill="#17211D" />
+        <path d="M19 0.4 Q20.8 2.4 22.6 0.4" fill="none" stroke="#17211D" strokeWidth={1.3} strokeLinecap="round" />
+        <circle cx={24.6} cy={7} r={1.7} fill="#FFE28A" stroke="#17211D" strokeWidth={0.8} />
+        <rect x={-26} y={-11} width={52} height={22} rx={8} fill="none" stroke="#17211D" strokeWidth={2} />
         <line x1={-4} y1={-11} x2={-4} y2={-17} stroke="#17211D" strokeWidth={2} />
         <line x1={-11} y1={-17} x2={3} y2={-17} stroke="#17211D" strokeWidth={2} />
       </g>
