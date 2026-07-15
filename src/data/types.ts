@@ -37,16 +37,16 @@ export interface StopData {
   stopNumber: string | null;
   landmark: string | null;
   /**
-   * progress is the arc-length fraction (0..1) along directions[0]'s shape.
-   * For directions[1] use 1 - progress (see stopProgress()).
+   * Schema v2: stop ids are unique per direction (real GTFS gives each
+   * direction its own platform stops), and progress is the arc-length
+   * fraction (0..1) along the shape of the direction that lists this stop.
    */
   position: { lat: number; lon: number; progress: number };
 }
 
 export type Difficulty = 'easy' | 'standard' | 'driver';
 
-/** Direction-aware progress along the rendered path. */
-export function stopProgress(route: RouteData, directionIndex: number, stopId: string): number {
-  const p = route.stops[stopId].position.progress;
-  return directionIndex === 0 ? p : 1 - p;
+/** Progress of a stop along its own direction's rendered path. */
+export function stopProgress(route: RouteData, stopId: string): number {
+  return route.stops[stopId].position.progress;
 }

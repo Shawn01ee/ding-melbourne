@@ -101,12 +101,12 @@ PB 비교: full-route는 timeMs 최소, sprint는 stops 최대(동률 시 wpm).
 
 ## 5. Implementation plan (진행 상태)
 
-1. ✅ Phase 0 Foundation: repo, tokens, fixture, reducer + 57 unit tests
-2. ✅ Phase 1 Playable slice: config → countdown → typing → bell → move → result, 한 방향 5 stops
-3. ⬜ Phase 2 Full Route: `scripts/gtfs/` 전처리 파이프라인(Node), Route 96 전 정류장, 양방향 검증
-4. ⬜ Phase 3 Polish: 모바일 visualViewport 대응, 결과 카드 공유 이미지, 사운드 다듬기
-5. ⬜ Phase 4 Content: Route 35·1, 한국어 UI, landmark metadata
-6. ⬜ Phase 5+ Growth/Realtime: PRD 승인 후
+1. ✅ Phase 0 Foundation: repo, tokens, fixture, reducer + unit tests
+2. ✅ Phase 1 Playable slice: config → countdown → typing → bell → move → result
+3. ✅ Phase 2 Content+GTFS: `scripts/gtfs/` 파이프라인, 5개 노선(96·86·109·58·1) 양방향, 스키마 v2, 노선 선택 UI, Section(10 stops) 모드, 트램 추종 카메라(긴 노선 가독성), 트램 리버리 아이콘, 합성 사운드(키틱·도어·벨·트램패스), GitHub Pages 자동 배포
+4. ⬜ Phase 3 Polish: 자체 호스팅 웹폰트(Public Sans/Inter 후보), 로고·파비콘, 결과 공유 이미지/링크, 커스텀 도메인, About/게임방법/개인정보 페이지
+5. ⬜ Phase 4 Accounts: Supabase 인증·프로필·리더보드, 서버측 점수 검증·rate limit·anti-cheat
+6. ⬜ Phase 5+ Growth/Realtime: daily route, 친구 대결, vehicle ghost (실시간 API)
 
 ## 6. Unresolved decisions (사용자 결정 필요)
 

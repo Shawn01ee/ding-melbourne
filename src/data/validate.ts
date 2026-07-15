@@ -49,13 +49,13 @@ export function validateRouteData(raw: unknown): ValidationResult {
     }
 
     // progress must be strictly increasing along each direction (0..1)
-    dirs.forEach((dir, di) => {
-      if (!Array.isArray(dir.stops)) return;
+    for (const dir of dirs) {
+      if (!Array.isArray(dir.stops)) continue;
       let prev = -Infinity;
       for (const stopId of dir.stops) {
         const stop = data.stops[stopId];
         if (!stop) continue;
-        const p = stopProgress(data, di, stopId);
+        const p = stopProgress(data, stopId);
         if (typeof p !== 'number' || p < 0 || p > 1) {
           problems.push(`stop "${stopId}" progress out of range`);
         } else if (p <= prev) {
@@ -63,7 +63,7 @@ export function validateRouteData(raw: unknown): ValidationResult {
         }
         prev = p;
       }
-    });
+    }
   }
 
   for (const [id, stop] of Object.entries(data.stops)) {

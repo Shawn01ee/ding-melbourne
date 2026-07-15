@@ -3,9 +3,11 @@
 **Play it here: https://shawn01ee.github.io/ding-melbourne/**
 
 Type the current tram stop name, ring the bell (Enter/Space), and watch the tram
-move to the next stop on a schematic Route 96 map. Milestone 1 build per the
-AI-ready PRD (v0.1, 15 Jul 2026): 5-stop Route 96 fixture, Full Route + 60-second
-Sprint, three difficulties, local personal bests, no backend.
+move to the next stop on a schematic route map. Five real Melbourne tram routes
+(96, 86, 109, 58, 1) built from official Transport Victoria GTFS data, both
+directions each. Modes: Full Route, 10-Stop Section, 60-second Sprint. Three
+difficulties, synthesized tram sounds, a follow-camera that zooms to the tram so
+long routes stay legible, local personal bests, no backend.
 
 ## Run
 
@@ -19,12 +21,20 @@ npm run build     # typecheck + production build
 ## Status
 
 - ✅ Phase 0–1: deterministic state machine (CONFIG → COUNTDOWN → TYPING → READY →
-  MOVING → FINISHED, plus PAUSED), per-character feedback, synthesized bell,
-  SVG route map with animated tram marker, localStorage personal bests.
-- ⬜ Phase 2: GTFS preprocessing pipeline replacing `src/data/generated/route-96.json`.
+  MOVING → FINISHED, plus PAUSED), per-character feedback, synthesized sounds,
+  SVG route map with animated tram, localStorage personal bests.
+- ✅ Phase 2: GTFS preprocessing pipeline ([scripts/gtfs/](scripts/gtfs/)) generating
+  five real routes; route picker, Section mode, follow-camera.
+- ⬜ Next: web font + branding polish, result sharing, then accounts + leaderboard
+  (Supabase) with server-side score validation.
 
-See [docs/PLAN.md](docs/PLAN.md) for assumptions, contracts, the full transition
-table, and open decisions.
+## Regenerating route data
+
+Route JSON in `src/data/generated/` is produced from the official Transport
+Victoria GTFS Schedule. See [scripts/gtfs/README.md](scripts/gtfs/README.md).
+
+See [docs/PLAN.md](docs/PLAN.md) for assumptions, contracts, and the transition
+table.
 
 ## Data & attribution
 

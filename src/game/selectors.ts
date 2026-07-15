@@ -1,6 +1,6 @@
 import type { StopData } from '../data/types';
 import { accuracy, score, wpm } from './scoring';
-import { currentDirection, SPRINT_MS, type GameState } from './reducer';
+import { currentDirection, runStopCount, SPRINT_MS, type GameState } from './reducer';
 
 /** Elapsed play time excluding paused spans. */
 export function elapsedMs(state: GameState): number {
@@ -32,9 +32,9 @@ export function scoreOf(state: GameState): number {
   });
 }
 
-/** Stops to clear in this run (start stop through terminus). */
+/** Stops to clear in this run (terminus for Full Route, capped for Section). */
 export function totalRunStops(state: GameState): number {
-  return currentDirection(state).stops.length - state.config.startStopIndex;
+  return runStopCount(state);
 }
 
 export function stopAt(state: GameState, index: number): StopData | null {

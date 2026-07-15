@@ -10,6 +10,16 @@ export interface StoredSettings {
   difficulty: GameConfig['difficulty'];
 }
 
+const KEY_LAST_ROUTE = 'ding.lastRoute.v1';
+
+export function loadLastRouteId(): string | null {
+  return read<string>(KEY_LAST_ROUTE);
+}
+
+export function saveLastRouteId(routeId: string): void {
+  write(KEY_LAST_ROUTE, routeId);
+}
+
 export interface PersonalBest {
   timeMs: number;
   stops: number;

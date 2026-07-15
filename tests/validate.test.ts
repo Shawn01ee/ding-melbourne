@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import routeJson from '../src/data/generated/route-96.json';
 import { validateRouteData } from '../src/data/validate';
+import { makeRoute } from './fixtures/makeRoute';
 
 function clone(): any {
-  return JSON.parse(JSON.stringify(routeJson));
+  return JSON.parse(JSON.stringify(makeRoute(6)));
 }
 
 describe('validateRouteData', () => {
-  it('accepts the shipped Route 96 fixture', () => {
-    const result = validateRouteData(routeJson);
-    expect(result.ok).toBe(true);
+  it('accepts a well-formed schema-v2 route', () => {
+    expect(validateRouteData(makeRoute(6)).ok).toBe(true);
   });
 
   it('rejects non-objects', () => {
@@ -33,7 +32,8 @@ describe('validateRouteData', () => {
 
   it('rejects empty answer arrays', () => {
     const bad = clone();
-    bad.stops['stop-southern-cross'].answers.easy = [];
+    const firstStop = bad.route.directions[0].stops[0];
+    bad.stops[firstStop].answers.easy = [];
     const result = validateRouteData(bad);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.problems.join(' ')).toMatch(/easy answers/);
@@ -41,7 +41,8 @@ describe('validateRouteData', () => {
 
   it('rejects non-monotonic progress along a direction', () => {
     const bad = clone();
-    bad.stops['stop-southern-cross'].position.progress = 0.9; // jumps past the following stop's 0.564
+    const secondStop = bad.route.directions[0].stops[1];
+    bad.stops[secondStop].position.progress = 0.99; // jumps past later stops
     const result = validateRouteData(bad);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.problems.join(' ')).toMatch(/progress not increasing/);

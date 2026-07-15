@@ -1,19 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import routeJson from '../src/data/generated/route-96.json';
 import {
   initialState,
   reducer,
+  SECTION_LENGTH,
   SPRINT_MS,
   targetText,
   type GameAction,
   type GameState,
 } from '../src/game/reducer';
-import { elapsedMs } from '../src/game/selectors';
+import { elapsedMs, totalRunStops } from '../src/game/selectors';
 import { validateRouteData } from '../src/data/validate';
+import { makeRoute } from './fixtures/makeRoute';
 
-const validated = validateRouteData(routeJson);
+// 12-stop fixture so Section mode (10) finishes before the terminus.
+const route = makeRoute(12);
+const validated = validateRouteData(route);
 if (!validated.ok) throw new Error('fixture invalid: ' + validated.problems.join('; '));
-const route = validated.data;
+const REVERSE_DIR = route.route.directions[1].id;
 
 const T0 = 1_000_000;
 
@@ -28,6 +31,15 @@ function run(state: GameState, ...actions: GameAction[]): GameState {
 /** CONFIG -> COUNTDOWN -> TYPING with startedAt = T0. */
 function startTyping(config?: Parameters<typeof initialState>[1]): GameState {
   return run(fresh(config), { type: 'START', at: T0 - 3000 }, { type: 'COUNTDOWN_DONE', at: T0 });
+}
+
+/** First expected character of the current target, and a char that is never it. */
+function firstChar(state: GameState): string {
+  return [...targetText(state)][0];
+}
+function wrongChar(state: GameState): string {
+  const c = firstChar(state).toLowerCase();
+  return c === 'z' ? 'q' : 'z';
 }
 
 /** Types the current stop's full canonical answer, one keystroke at a time. */
@@ -53,7 +65,7 @@ describe('CONFIG', () => {
     const s = run(
       fresh(),
       { type: 'CONFIGURE', patch: { startStopIndex: 2 } },
-      { type: 'CONFIGURE', patch: { directionId: 'to-east-brunswick' } },
+      { type: 'CONFIGURE', patch: { directionId: REVERSE_DIR } },
     );
     expect(s.config.startStopIndex).toBe(0);
   });
@@ -66,6 +78,33 @@ describe('CONFIG', () => {
   it('TOGGLE_SOUND works in any phase', () => {
     const s = startTyping();
     expect(reducer(s, { type: 'TOGGLE_SOUND' }).config.soundOn).toBe(false);
+  });
+});
+
+describe('SELECT_ROUTE', () => {
+  const other = makeRoute(6, 'tram-other');
+
+  it('swaps the route and resets direction/start stop, keeping mode/difficulty', () => {
+    const s = run(
+      fresh(),
+      { type: 'CONFIGURE', patch: { mode: 'sprint', difficulty: 'driver', startStopIndex: 4 } },
+      { type: 'SELECT_ROUTE', route: other },
+    );
+    expect(s.route.route.id).toBe('tram-other');
+    expect(s.config.directionId).toBe(other.route.directions[0].id);
+    expect(s.config.startStopIndex).toBe(0);
+    expect(s.config.mode).toBe('sprint');
+    expect(s.config.difficulty).toBe('driver');
+  });
+
+  it('is a no-op for the same route id', () => {
+    const s = fresh();
+    expect(reducer(s, { type: 'SELECT_ROUTE', route })).toBe(s);
+  });
+
+  it('is ignored outside config phase', () => {
+    const s = startTyping();
+    expect(reducer(s, { type: 'SELECT_ROUTE', route: other }).route.route.id).toBe(route.route.id);
   });
 });
 
@@ -90,7 +129,8 @@ describe('START / COUNTDOWN', () => {
 
 describe('TYPING input accounting', () => {
   it('counts a correct keystroke', () => {
-    const s = reducer(startTyping(), { type: 'INPUT', value: 'M', at: T0 + 100 });
+    const base = startTyping();
+    const s = reducer(base, { type: 'INPUT', value: firstChar(base), at: T0 + 100 });
     expect(s.totalKeystrokes).toBe(1);
     expect(s.correctKeystrokes).toBe(1);
     expect(s.errors).toBe(0);
@@ -98,7 +138,8 @@ describe('TYPING input accounting', () => {
   });
 
   it('marks a mismatch without advancing the stop (AC-02)', () => {
-    const s = reducer(startTyping(), { type: 'INPUT', value: 'X', at: T0 + 100 });
+    const base = startTyping();
+    const s = reducer(base, { type: 'INPUT', value: wrongChar(base), at: T0 + 100 });
     expect(s.errors).toBe(1);
     expect(s.stopHadError).toBe(true);
     expect(s.stopIndex).toBe(0);
@@ -106,9 +147,10 @@ describe('TYPING input accounting', () => {
   });
 
   it('keeps totals after backspace (PRD §8)', () => {
+    const base = startTyping();
     const s = run(
-      startTyping(),
-      { type: 'INPUT', value: 'X', at: T0 + 100 },
+      base,
+      { type: 'INPUT', value: wrongChar(base), at: T0 + 100 },
       { type: 'INPUT', value: '', at: T0 + 200 },
     );
     expect(s.totalKeystrokes).toBe(1);
@@ -117,7 +159,8 @@ describe('TYPING input accounting', () => {
   });
 
   it('is case-insensitive on standard difficulty', () => {
-    const s = reducer(startTyping(), { type: 'INPUT', value: 'm', at: T0 + 100 });
+    const base = startTyping();
+    const s = reducer(base, { type: 'INPUT', value: firstChar(base).toLowerCase(), at: T0 + 100 });
     expect(s.correctKeystrokes).toBe(1);
   });
 
@@ -162,7 +205,7 @@ describe('DEPART / MOVING', () => {
 
   it('a stop passed with an error resets the streak', () => {
     let s = startTyping();
-    s = reducer(s, { type: 'INPUT', value: 'X', at: T0 + 50 });
+    s = reducer(s, { type: 'INPUT', value: wrongChar(s), at: T0 + 50 });
     s = reducer(s, { type: 'INPUT', value: '', at: T0 + 60 });
     s = typeAnswer(s, T0 + 500);
     s = reducer(s, { type: 'DEPART', at: T0 + 600 });
@@ -210,9 +253,11 @@ describe('FINISHED', () => {
   });
 
   it('starting mid-route finishes after the remaining stops', () => {
+    const stopsCount = route.route.directions[0].stops.length;
+    const startIndex = stopsCount - 2; // two stops from the terminus
     let s = run(
       fresh(),
-      { type: 'CONFIGURE', patch: { startStopIndex: 3 } },
+      { type: 'CONFIGURE', patch: { startStopIndex: startIndex } },
       { type: 'START', at: T0 - 3000 },
       { type: 'COUNTDOWN_DONE', at: T0 },
     );
@@ -223,6 +268,39 @@ describe('FINISHED', () => {
     }
     expect(s.phase).toBe('finished');
     expect(s.stopsCompleted).toBe(2);
+  });
+
+  it('section mode finishes after SECTION_LENGTH stops, before the terminus', () => {
+    let s = run(
+      fresh(),
+      { type: 'CONFIGURE', patch: { mode: 'section' } },
+      { type: 'START', at: T0 - 3000 },
+      { type: 'COUNTDOWN_DONE', at: T0 },
+    );
+    expect(totalRunStops(s)).toBe(SECTION_LENGTH); // fixture has 12 > 10 stops
+    for (let i = 0; i < SECTION_LENGTH; i++) {
+      s = typeAnswer(s, T0 + 1000 * (i + 1));
+      s = reducer(s, { type: 'DEPART', at: T0 + 1000 * (i + 1) + 500 });
+      if (i < SECTION_LENGTH - 1) {
+        expect(s.phase).toBe('moving');
+        s = reducer(s, { type: 'MOVE_DONE', at: T0 + 1000 * (i + 1) + 900 });
+      }
+    }
+    expect(s.phase).toBe('finished');
+    expect(s.finishReason).toBe('completed');
+    expect(s.stopsCompleted).toBe(SECTION_LENGTH);
+    expect(s.stopIndex).toBeLessThan(route.route.directions[0].stops.length - 1);
+  });
+
+  it('section mode near the terminus caps at the remaining stops', () => {
+    const stopsCount = route.route.directions[0].stops.length;
+    const s = run(
+      fresh(),
+      { type: 'CONFIGURE', patch: { mode: 'section', startStopIndex: stopsCount - 3 } },
+      { type: 'START', at: T0 - 3000 },
+      { type: 'COUNTDOWN_DONE', at: T0 },
+    );
+    expect(totalRunStops(s)).toBe(3); // fewer than SECTION_LENGTH remain
   });
 
   it('sprint: TICK past 60s finishes with time-up and locks input (AC-05)', () => {

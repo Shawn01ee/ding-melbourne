@@ -9,10 +9,12 @@ import { foldChar, isAnswerMatch } from './normalize';
  */
 
 export type Phase = 'config' | 'countdown' | 'typing' | 'ready' | 'moving' | 'finished' | 'paused';
-export type Mode = 'full-route' | 'sprint';
+export type Mode = 'full-route' | 'section' | 'sprint';
 export type FinishReason = 'completed' | 'time-up';
 
 export const SPRINT_MS = 60_000;
+/** Stops to clear in a Section run (PRD "10개 정류장 구간"). */
+export const SECTION_LENGTH = 10;
 
 export interface GameConfig {
   directionId: string;
@@ -49,6 +51,7 @@ export interface GameState {
 }
 
 export type GameAction =
+  | { type: 'SELECT_ROUTE'; route: RouteData }
   | { type: 'CONFIGURE'; patch: Partial<GameConfig> }
   | { type: 'START'; at: number }
   | { type: 'COUNTDOWN_DONE'; at: number }
@@ -134,6 +137,18 @@ function timeUpIfDue(state: GameState, at: number): GameState | null {
   return null;
 }
 
+/** Stops the current run must clear before FINISHED (terminus, or a section cap). */
+export function runStopCount(state: GameState): number {
+  const remaining = currentDirection(state).stops.length - state.config.startStopIndex;
+  if (state.config.mode === 'section') return Math.min(SECTION_LENGTH, remaining);
+  return remaining;
+}
+
+/** Stop index (inclusive) at which a Full Route / Section run finishes. */
+function lastRunStopIndex(state: GameState): number {
+  return state.config.startStopIndex + runStopCount(state) - 1;
+}
+
 function resetRun(state: GameState): GameState {
   return {
     ...state,
@@ -169,6 +184,22 @@ function advanceStop(state: GameState, at: number): GameState {
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'SELECT_ROUTE': {
+      if (state.phase !== 'config') return state;
+      if (action.route.route.id === state.route.route.id) return state;
+      // New route: reset direction/start stop, keep mode/difficulty/sound.
+      return {
+        ...state,
+        route: action.route,
+        config: {
+          ...state.config,
+          directionId: action.route.route.directions[0].id,
+          startStopIndex: 0,
+        },
+        stopIndex: 0,
+      };
+    }
+
     case 'CONFIGURE': {
       if (state.phase !== 'config') return state;
       const config = { ...state.config, ...action.patch };
@@ -236,7 +267,6 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const dueBefore = timeUpIfDue(state, action.at);
       if (dueBefore) return dueBefore;
 
-      const direction = currentDirection(state);
       const streak = state.stopHadError ? 0 : state.streak + 1;
       const departed: GameState = {
         ...state,
@@ -245,7 +275,8 @@ export function reducer(state: GameState, action: GameAction): GameState {
         bestStreak: Math.max(state.bestStreak, streak),
         now: action.at,
       };
-      const isLastStop = state.stopIndex >= direction.stops.length - 1;
+      // Full Route ends at the terminus; Section ends after its stop cap.
+      const isLastStop = state.stopIndex >= lastRunStopIndex(state);
       if (isLastStop) return finish(departed, 'completed', action.at);
       return { ...departed, phase: 'moving', input: '' };
     }

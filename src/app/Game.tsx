@@ -5,24 +5,27 @@ import { CountdownScreen } from '../components/CountdownScreen';
 import { Hud } from '../components/Hud';
 import { ResultScreen } from '../components/ResultScreen';
 import { StopConsole } from '../components/StopConsole';
-import type { RouteData } from '../data/types';
+import type { AvailableRoute } from '../data/routes';
 import { directionIndexOf, initialState, reducer } from '../game/reducer';
 import { RouteCanvas } from '../map/RouteCanvas';
-import { loadLastConfig, loadSettings } from '../storage/local';
+import { loadLastConfig, loadLastRouteId, loadSettings } from '../storage/local';
 
-export function Game({ route }: { route: RouteData }) {
+export function Game({ routes }: { routes: AvailableRoute[] }) {
   const [state, dispatch] = useReducer(
     reducer,
-    route,
-    (r) => {
+    routes,
+    (list) => {
+      const lastId = loadLastRouteId();
+      const route = list.find((r) => r.data.route.id === lastId)?.data ?? list[0].data;
       const saved = { ...loadSettings(), ...loadLastConfig() };
-      const validDirection = r.route.directions.some((d) => d.id === saved.directionId);
+      const validDirection = route.route.directions.some((d) => d.id === saved.directionId);
       if (!validDirection) delete saved.directionId;
-      return initialState(r, saved);
+      return initialState(route, saved);
     },
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const prevPhaseRef = useRef(state.phase);
+  const route = state.route;
 
   const inGame =
     state.phase === 'typing' ||
@@ -85,7 +88,8 @@ export function Game({ route }: { route: RouteData }) {
     containerRef.current?.querySelector<HTMLInputElement>('.ghost-input')?.focus();
   };
 
-  if (state.phase === 'config') return <ConfigScreen route={route} state={state} dispatch={dispatch} />;
+  if (state.phase === 'config')
+    return <ConfigScreen routes={routes} route={route} state={state} dispatch={dispatch} />;
   if (state.phase === 'countdown') return <CountdownScreen state={state} dispatch={dispatch} />;
   if (state.phase === 'finished') return <ResultScreen key={state.finishedAt ?? 0} state={state} dispatch={dispatch} />;
 

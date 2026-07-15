@@ -1,12 +1,11 @@
 import { DataErrorScreen } from '../components/DataErrorScreen';
-import routeJson from '../data/generated/route-96.json';
-import { validateRouteData } from '../data/validate';
+import { AVAILABLE_ROUTES } from '../data/routes';
 import { Game } from './Game';
 
-// Validated once at module load; AC-09 demands a visible error, never a silent crash.
-const validation = validateRouteData(routeJson);
-
 export default function App() {
-  if (!validation.ok) return <DataErrorScreen problems={validation.problems} />;
-  return <Game route={validation.data} />;
+  // No route survived validation — surface it, never fail silently (AC-09).
+  if (AVAILABLE_ROUTES.length === 0) {
+    return <DataErrorScreen problems={['No playable routes: every generated route JSON failed validation.']} />;
+  }
+  return <Game routes={AVAILABLE_ROUTES} />;
 }
