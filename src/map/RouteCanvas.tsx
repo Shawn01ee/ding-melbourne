@@ -12,10 +12,10 @@ const REDUCED_MOVE_MS = 180;
 
 // Following-camera tuning: aim to keep roughly this many stops across the
 // viewport so long routes (70+ stops) stay legible instead of collapsing.
-const TARGET_STOPS_ACROSS = 5;
+const TARGET_STOPS_ACROSS = 4;
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 5;
-const LABEL_RADIUS = 2; // label stops within this many indices of the current one
+const MAX_ZOOM = 6;
+const LABEL_RADIUS = 1; // name only the immediate previous/next stop; others are dots
 
 interface RouteCanvasProps {
   route: RouteData;
@@ -134,50 +134,17 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
           vectorEffect="non-scaling-stroke"
         />
 
+        {/* Dots pass: every stop, drawn under the tram. */}
         {direction.stops.map((stopId, i) => {
           const p = stopPoints[i];
-          const stop = route.stops[stopId];
-          const status = i < stopIndex ? 'past' : i === stopIndex ? 'current' : 'future';
-          const showLabel = Math.abs(i - stopIndex) <= LABEL_RADIUS;
-          const labelLeft = i % 2 === 0;
-          const offset = (status === 'current' ? 30 : 15) * k;
-          const labelX = labelLeft ? p.x - offset : p.x + offset;
-          const anchor = labelLeft ? 'end' : 'start';
+          const isCurrent = i === stopIndex;
+          const status = i < stopIndex ? 'past' : isCurrent ? 'current' : 'future';
           return (
             <g key={stopId} className={`stop stop-${status}`}>
-              {status === 'current' && (
+              {isCurrent && (
                 <circle className="stop-pulse" cx={p.x} cy={p.y} r={16 * k} vectorEffect="non-scaling-stroke" />
               )}
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={(status === 'current' ? 8 : 5) * k}
-                vectorEffect="non-scaling-stroke"
-              />
-              {showLabel && (
-                <>
-                  <text
-                    x={labelX}
-                    y={p.y + 2 * k}
-                    textAnchor={anchor}
-                    style={{ fontSize: `${16 * k}px` }}
-                    vectorEffect="non-scaling-stroke"
-                  >
-                    {stop.landmark ?? stop.displayName.split('/')[0]}
-                  </text>
-                  {stop.stopNumber && (
-                    <text
-                      className="stop-num"
-                      x={labelX}
-                      y={p.y + 17 * k}
-                      textAnchor={anchor}
-                      style={{ fontSize: `${12 * k}px` }}
-                    >
-                      #{stop.stopNumber}
-                    </text>
-                  )}
-                </>
-              )}
+              <circle cx={p.x} cy={p.y} r={(isCurrent ? 8 : 5) * k} vectorEffect="non-scaling-stroke" />
             </g>
           );
         })}
@@ -208,6 +175,44 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
           <line x1={-4} y1={-11} x2={-4} y2={-17} stroke="#17211D" strokeWidth={2} />
           <line x1={-11} y1={-17} x2={3} y2={-17} stroke="#17211D" strokeWidth={2} />
         </g>
+
+        {/* Labels pass: only the immediate previous/next stop, drawn ON TOP of
+            the tram so a nearby label is never covered. The current stop's name
+            lives in the console, so the map omits it. */}
+        {direction.stops.map((stopId, i) => {
+          if (i === stopIndex || Math.abs(i - stopIndex) > LABEL_RADIUS) return null;
+          const p = stopPoints[i];
+          const stop = route.stops[stopId];
+          const status = i < stopIndex ? 'past' : 'future';
+          const labelLeft = i % 2 === 0;
+          const offset = 15 * k;
+          const labelX = labelLeft ? p.x - offset : p.x + offset;
+          const anchor = labelLeft ? 'end' : 'start';
+          return (
+            <g key={stopId} className={`stop stop-${status}`}>
+              <text
+                x={labelX}
+                y={p.y + 2 * k}
+                textAnchor={anchor}
+                style={{ fontSize: `${15 * k}px` }}
+                vectorEffect="non-scaling-stroke"
+              >
+                {stop.landmark ?? stop.displayName.split('/')[0]}
+              </text>
+              {stop.stopNumber && (
+                <text
+                  className="stop-num"
+                  x={labelX}
+                  y={p.y + 16 * k}
+                  textAnchor={anchor}
+                  style={{ fontSize: `${11 * k}px` }}
+                >
+                  #{stop.stopNumber}
+                </text>
+              )}
+            </g>
+          );
+        })}
       </g>
     </svg>
   );

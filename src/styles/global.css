@@ -475,7 +475,10 @@ select {
   fill: var(--charcoal);
   paint-order: stroke;
   stroke: var(--cream);
-  stroke-width: 5px;
+  /* Thin halo just to lift text off the rail; 5px merged thin glyphs at the
+     map's constant 15px label size (non-scaling stroke). */
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
 }
 
 .stop-past text {
