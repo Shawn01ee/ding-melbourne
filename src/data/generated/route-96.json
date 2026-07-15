@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "sourceUpdatedAt": "2026-07-15",
+  "note": "Phase 0/1 development fixture: 5 hand-picked Route 96 stops with approximate coordinates. Stop numbers are placeholders except #132 (PRD S9). Replaced by the GTFS preprocessing pipeline in Phase 2.",
+  "route": {
+    "id": "tram-96",
+    "shortName": "96",
+    "longName": "East Brunswick - St Kilda Beach",
+    "color": "#D0007F",
+    "directions": [
+      {
+        "id": "to-st-kilda",
+        "headsign": "St Kilda Beach",
+        "stops": [
+          "stop-melbourne-museum",
+          "stop-bourke-street-mall",
+          "stop-southern-cross",
+          "stop-south-melbourne-market",
+          "stop-st-kilda-station"
+        ],
+        "shape": [
+          [144.9717, -37.8036],
+          [144.9735, -37.811],
+          [144.9631, -37.8136],
+          [144.9526, -37.8183],
+          [144.9536, -37.826],
+          [144.957, -37.8316],
+          [144.964, -37.845],
+          [144.974, -37.859]
+        ]
+      },
+      {
+        "id": "to-east-brunswick",
+        "headsign": "East Brunswick",
+        "stops": [
+          "stop-st-kilda-station",
+          "stop-south-melbourne-market",
+          "stop-southern-cross",
+          "stop-bourke-street-mall",
+          "stop-melbourne-museum"
+        ],
+        "shape": [
+          [144.974, -37.859],
+          [144.964, -37.845],
+          [144.957, -37.8316],
+          [144.9536, -37.826],
+          [144.9526, -37.8183],
+          [144.9631, -37.8136],
+          [144.9735, -37.811],
+          [144.9717, -37.8036]
+        ]
+      }
+    ]
+  },
+  "stops": {
+    "stop-melbourne-museum": {
+      "displayName": "Melbourne Museum/Nicholson St #12",
+      "answers": {
+        "easy": ["Melbourne Museum"],
+        "standard": ["Melbourne Museum/Nicholson St"],
+        "driver": ["Melbourne Museum/Nicholson St #12"]
+      },
+      "stopNumber": "12",
+      "landmark": "Melbourne Museum",
+      "position": { "lat": -37.8036, "lon": 144.9717, "progress": 0 }
+    },
+    "stop-bourke-street-mall": {
+      "displayName": "Bourke Street Mall/Bourke St #5",
+      "answers": {
+        "easy": ["Bourke Street Mall"],
+        "standard": ["Bourke Street Mall/Bourke St"],
+        "driver": ["Bourke Street Mall/Bourke St #5"]
+      },
+      "stopNumber": "5",
+      "landmark": "Bourke Street Mall",
+      "position": { "lat": -37.8136, "lon": 144.9631, "progress": 0.23 }
+    },
+    "stop-southern-cross": {
+      "displayName": "Southern Cross Station/Spencer St #1",
+      "answers": {
+        "easy": ["Southern Cross", "Southern Cross Station"],
+        "standard": ["Southern Cross Station/Spencer St"],
+        "driver": ["Southern Cross Station/Spencer St #1"]
+      },
+      "stopNumber": "1",
+      "landmark": "Southern Cross Station",
+      "position": { "lat": -37.8183, "lon": 144.9526, "progress": 0.366 }
+    },
+    "stop-south-melbourne-market": {
+      "displayName": "South Melbourne Market/Clarendon St #127",
+      "answers": {
+        "easy": ["South Melbourne Market"],
+        "standard": ["South Melbourne Market/Clarendon St"],
+        "driver": ["South Melbourne Market/Clarendon St #127"]
+      },
+      "stopNumber": "127",
+      "landmark": "South Melbourne Market",
+      "position": { "lat": -37.8316, "lon": 144.957, "progress": 0.564 }
+    },
+    "stop-st-kilda-station": {
+      "displayName": "St Kilda Station/Fitzroy St #132",
+      "answers": {
+        "easy": ["St Kilda Station"],
+        "standard": ["St Kilda Station/Fitzroy St"],
+        "driver": ["St Kilda Station/Fitzroy St #132"]
+      },
+      "stopNumber": "132",
+      "landmark": "St Kilda Station",
+      "position": { "lat": -37.859, "lon": 144.974, "progress": 1 }
+    }
+  }
+}
