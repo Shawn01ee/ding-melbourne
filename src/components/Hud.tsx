@@ -5,6 +5,7 @@ import { stopAt, stopShortName, totalRunStops } from '../game/selectors';
 import { BRAND, inkForBackground } from '../brand';
 import type { ColorTheme } from '../storage/local';
 import { ThemeToggle } from './ThemeToggle';
+import { TramLogo } from './TramLogo';
 
 interface HudProps {
   state: GameState;
@@ -22,7 +23,7 @@ export function Hud({ state, dispatch, theme, onToggleTheme }: HudProps) {
   return (
     <header className="hud">
       <div className="hud-service-card">
-        <span className="hud-monogram" aria-hidden="true">DM</span>
+        <TramLogo className="hud-tram-logo" />
         <span className="brand brand-small">{BRAND}</span>
         <span
           className="route-badge"

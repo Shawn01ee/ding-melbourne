@@ -39,6 +39,9 @@ attribution date shown in the app.
   doubles back through the CBD.
 - Subsamples each shape to ≤300 points and trims it to the played span.
 - Parses `Name/Road #num` stop labels into easy / standard / driver answers.
+- Writes `generated/index.json`, a lightweight catalog with ≤64 overview points
+  per line. The browser loads this catalog first and fetches a full route JSON
+  only when that route is selected.
 
 `--routes all` removes stale `route-*.json` files from the output directory
 before writing the current official set. Pass a comma-separated list instead
@@ -46,7 +49,13 @@ when intentionally generating only a subset.
 
 ## Route registry
 
-`src/data/routes.ts` discovers generated `route-*.json` files automatically.
-Validation runs at load; a malformed route is skipped with a console warning
-rather than crashing the app. Circular services such as Route 35 may publish
-one direction; all other current routes publish both directions.
+`src/data/routes.ts` discovers generated `route-*.json` files as lazy chunks.
+Validation runs when a line is requested; malformed route data surfaces a
+visible load error rather than crashing the app. Circular services such as
+Route 35 may publish one direction; all other current routes publish both.
+
+If route files were changed manually, rebuild only the lightweight index with:
+
+```bash
+node scripts/gtfs/build-routes.mjs --index-only --out src/data/generated
+```

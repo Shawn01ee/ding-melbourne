@@ -2,8 +2,6 @@
 
 **Play it here: https://ding-melbourne.vercel.app/**
 
-GitHub Pages mirror: https://shawn01ee.github.io/ding-melbourne/
-
 Type each tram stop name and watch every correct character drive the tram along
 the map; completing a stop opens the next target immediately. The game includes
 all 24 metropolitan tram routes in the 10 July 2026 Transport Victoria GTFS
@@ -20,6 +18,7 @@ npm install
 npm run dev       # local dev server
 npm test          # 68 unit tests (gameplay, data validation, complete route registry)
 npm run build     # typecheck + production build
+npm run verify    # test + typecheck + production build (CI/Vercel gate)
 ```
 
 ## Status
@@ -29,7 +28,8 @@ npm run build     # typecheck + production build
   SVG route map with animated tram, localStorage personal bests.
 - ✅ Phase 2: GTFS preprocessing pipeline ([scripts/gtfs/](scripts/gtfs/)) generating
   all 24 currently published tram routes; scrollable route picker, Section mode,
-  follow-camera, and a selectable whole-network map.
+  follow-camera, a selectable geographic network explorer with route focus, and
+  per-route lazy loading to keep the initial download small.
 - ⬜ Next: web font + branding polish, result sharing, then accounts + leaderboard
   (Supabase) with server-side score validation.
 

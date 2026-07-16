@@ -64,6 +64,18 @@ button {
   flex-direction: column;
 }
 
+.route-loading-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--cream);
+  color: var(--muted);
+}
+
+.route-loading-screen .tram-logo { width: 56px; height: 56px; }
+.route-loading-screen .brand { color: var(--charcoal); font-size: 0.78rem; }
+.route-loading-screen > span { font-size: 0.72rem; }
+
 .brand {
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -74,6 +86,29 @@ button {
 .brand-small {
   font-size: 0.8rem;
 }
+
+.tram-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  overflow: visible;
+}
+
+.tram-logo-ground { fill: #00864a; }
+.tram-logo-pole,
+.tram-logo-rail {
+  fill: none;
+  stroke: #f6c744;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tram-logo-body { fill: #f6f1df; stroke: #17211d; stroke-width: 2.5; }
+.tram-logo-window-frame { fill: #17211d; }
+.tram-logo-window { fill: #7fb8c5; }
+.tram-logo-bumper { fill: none; stroke: #00864a; stroke-width: 3; stroke-linecap: round; }
+.tram-logo-lamp { fill: #f6c744; }
 
 .route-badge {
   display: inline-flex;
@@ -152,6 +187,23 @@ button {
 .route-chip.selected {
   background: var(--card);
   box-shadow: 0 4px 14px rgb(23 33 29 / 0.08);
+}
+
+.route-chip:disabled,
+.network-route-key:disabled,
+.network-drive:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.route-load-error {
+  margin: -8px 0 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--wrong) 12%, var(--card));
+  color: var(--wrong);
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .route-chip-text {
@@ -1069,20 +1121,14 @@ kbd {
 }
 
 .config-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--charcoal);
   font-size: clamp(1rem, 1.5vw, 1.25rem);
 }
 
-.config-brand::before {
-  content: '';
-  display: inline-block;
-  width: 30px;
-  height: 8px;
-  margin-right: 10px;
-  border-radius: 999px;
-  background: var(--route-color);
-  vertical-align: 0.1em;
-}
+.config-brand .tram-logo { width: 34px; height: 34px; }
 
 .config-hero h1 {
   max-width: 650px;
@@ -1529,18 +1575,9 @@ kbd {
   white-space: nowrap;
 }
 
-.hud-monogram {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.hud-tram-logo {
   width: 36px;
   height: 36px;
-  border-radius: 12px;
-  background: var(--cockpit-green);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
 }
 
 .hud .brand-small {
@@ -1831,9 +1868,14 @@ kbd {
   position: absolute;
   top: 28px;
   left: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--charcoal);
   font-size: 0.72rem;
 }
+
+.countdown-brand .tram-logo { width: 28px; height: 28px; }
 
 .countdown-service {
   display: flex;
@@ -2367,7 +2409,7 @@ kbd {
   .hud .brand-small { display: none; }
   .hud-service-card,
   .hud-right { min-height: 52px; padding: 4px 7px; border-radius: 15px; }
-  .hud-monogram { width: 34px; height: 34px; }
+  .hud-tram-logo { width: 34px; height: 34px; }
   .hud-button { width: 44px; height: 44px; }
   .hud-button-label { display: none; }
 

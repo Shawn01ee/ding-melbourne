@@ -5,20 +5,21 @@ import { CountdownScreen } from '../components/CountdownScreen';
 import { Hud } from '../components/Hud';
 import { ResultScreen } from '../components/ResultScreen';
 import { StopConsole } from '../components/StopConsole';
-import type { AvailableRoute } from '../data/routes';
+import { loadRoute, type RouteSummary } from '../data/routes';
+import type { RouteData } from '../data/types';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
 import { RouteCanvas } from '../map/RouteCanvas';
-import { loadLastConfig, loadLastRouteId, loadSettings, loadTheme, saveTheme } from '../storage/local';
+import { loadLastConfig, loadSettings, loadTheme, saveTheme } from '../storage/local';
 
-export function Game({ routes }: { routes: AvailableRoute[] }) {
+export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initialRoute: RouteData }) {
   const [theme, setTheme] = useState(loadTheme);
   const [networkOpen, setNetworkOpen] = useState(false);
+  const [loadingRouteId, setLoadingRouteId] = useState<string | null>(null);
+  const [routeLoadError, setRouteLoadError] = useState<string | null>(null);
   const [state, dispatch] = useReducer(
     reducer,
-    routes,
-    (list) => {
-      const lastId = loadLastRouteId();
-      const route = list.find((r) => r.data.route.id === lastId)?.data ?? list[0].data;
+    initialRoute,
+    (route) => {
       const saved = { ...loadSettings(), ...loadLastConfig() };
       const validDirection = route.route.directions.some((d) => d.id === saved.directionId);
       if (!validDirection) delete saved.directionId;
@@ -27,7 +28,7 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const route = state.route;
-  const networkRoutes = useMemo(() => routes.map((available) => available.data), [routes]);
+  const networkRoutes = useMemo(() => routes, [routes]);
 
   const inGame = state.phase === 'typing' || state.phase === 'paused';
   const target = targetText(state);
@@ -39,6 +40,22 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
   }, [theme]);
 
   const toggleTheme = () => setTheme((current) => current === 'day' ? 'night' : 'day');
+
+  const selectRoute = async (summary: RouteSummary) => {
+    if (summary.id === route.route.id) return true;
+    setLoadingRouteId(summary.id);
+    setRouteLoadError(null);
+    try {
+      const selected = await loadRoute(summary.id);
+      dispatch({ type: 'SELECT_ROUTE', route: selected });
+      return true;
+    } catch (error) {
+      setRouteLoadError(error instanceof Error ? error.message : String(error));
+      return false;
+    } finally {
+      setLoadingRouteId(null);
+    }
+  };
 
   // Concise, browser-readable state for visual regression and accessibility
   // tooling. The SVG uses a follow camera, so route order is more useful than
@@ -58,6 +75,7 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
         theme,
         networkOverviewOpen: state.phase === 'config' && networkOpen,
         networkRouteCount: networkRoutes.length,
+        loadingRoute: loadingRouteId,
         stopIndex: state.stopIndex,
         stopCount: direction.stops.length,
         currentStop: stop?.displayName ?? null,
@@ -74,7 +92,7 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
     return () => {
       delete testWindow.render_game_to_text;
     };
-  }, [networkOpen, networkRoutes.length, route, state, theme]);
+  }, [loadingRouteId, networkOpen, networkRoutes.length, route, state, theme]);
 
   // Clock tick while a run is live.
   useEffect(() => {
@@ -162,6 +180,9 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
         dispatch={dispatch}
         theme={theme}
         networkOpen={networkOpen}
+        loadingRouteId={loadingRouteId}
+        routeLoadError={routeLoadError}
+        onSelectRoute={selectRoute}
         onToggleTheme={toggleTheme}
         onOpenNetwork={() => setNetworkOpen(true)}
         onCloseNetwork={() => setNetworkOpen(false)}

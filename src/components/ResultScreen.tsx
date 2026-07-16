@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { inkForBackground } from '../brand';
-import type { RouteData } from '../data/types';
+import type { RouteSummary } from '../data/routes';
 import { directionIndexOf, targetText, type GameAction, type GameState } from '../game/reducer';
 import { accuracyOf, elapsedMs, formatClock, scoreOf, totalRunStops, wpmOf } from '../game/selectors';
 import { RouteCanvas } from '../map/RouteCanvas';
@@ -10,7 +10,7 @@ import { ThemeToggle } from './ThemeToggle';
 
 interface ResultScreenProps {
   state: GameState;
-  routes: RouteData[];
+  routes: RouteSummary[];
   dispatch: (action: GameAction) => void;
   theme: ColorTheme;
   onToggleTheme: () => void;

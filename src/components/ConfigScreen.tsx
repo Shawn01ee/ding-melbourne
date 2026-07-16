@@ -2,7 +2,8 @@ import { useEffect, useRef, type CSSProperties } from 'react';
 import { primeAudio } from '../audio/bell';
 import { NetworkOverview } from './NetworkOverview';
 import { ThemeToggle } from './ThemeToggle';
-import type { AvailableRoute } from '../data/routes';
+import { TramLogo } from './TramLogo';
+import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import type { GameAction, GameState, Mode } from '../game/reducer';
 import { directionIndexOf, SECTION_LENGTH } from '../game/reducer';
@@ -11,12 +12,15 @@ import { saveLastConfig, saveLastRouteId, saveSettings, type ColorTheme } from '
 import { BRAND, TAGLINE, inkForBackground } from '../brand';
 
 interface ConfigScreenProps {
-  routes: AvailableRoute[];
+  routes: RouteSummary[];
   route: RouteData;
   state: GameState;
   dispatch: (action: GameAction) => void;
   theme: ColorTheme;
   networkOpen: boolean;
+  loadingRouteId: string | null;
+  routeLoadError: string | null;
+  onSelectRoute: (route: RouteSummary) => Promise<boolean>;
   onToggleTheme: () => void;
   onOpenNetwork: () => void;
   onCloseNetwork: () => void;
@@ -35,6 +39,9 @@ export function ConfigScreen({
   dispatch,
   theme,
   networkOpen,
+  loadingRouteId,
+  routeLoadError,
+  onSelectRoute,
   onToggleTheme,
   onOpenNetwork,
   onCloseNetwork,
@@ -95,7 +102,10 @@ export function ConfigScreen({
 
       <header className="config-hero">
         <p className="config-kicker">Melbourne tram typing game</p>
-        <p className="brand config-brand">{BRAND}</p>
+        <p className="brand config-brand">
+          <TramLogo />
+          <span>{BRAND}</span>
+        </p>
         <h1 aria-label={TAGLINE}>
           <span>MISS YOUR</span>
           <span>STOP? DON'T</span>
@@ -138,37 +148,42 @@ export function ConfigScreen({
             Route <span className="route-count">{routes.length} lines</span>
           </legend>
           <div className="route-grid" role="radiogroup" aria-label="Route">
-            {routes.map(({ data, totalStops }) => {
-              const selected = data.route.id === route.route.id;
+            {routes.map((summary) => {
+              const selected = summary.id === route.route.id;
+              const loading = loadingRouteId === summary.id;
               return (
                 <button
-                  key={data.route.id}
+                  key={summary.id}
                   ref={selected ? selectedRouteRef : undefined}
                   type="button"
                   role="radio"
                   aria-checked={selected}
                   className={selected ? 'route-chip selected' : 'route-chip'}
-                  style={selected ? { borderColor: data.route.color } : undefined}
-                  onClick={() => dispatch({ type: 'SELECT_ROUTE', route: data })}
+                  style={selected ? { borderColor: summary.color } : undefined}
+                  aria-busy={loading}
+                  disabled={loadingRouteId !== null}
+                  onClick={() => void onSelectRoute(summary)}
                 >
                   <span
                     className="route-badge"
                     style={{
-                      background: data.route.color,
-                      color: inkForBackground(data.route.color),
+                      background: summary.color,
+                      color: inkForBackground(summary.color),
                     }}
                   >
-                    {data.route.shortName}
+                    {loading ? '…' : summary.shortName}
                   </span>
                   <span className="route-chip-text">
-                    <span className="route-chip-name">{data.route.longName}</span>
-                    <span className="route-chip-meta">{totalStops} stops</span>
+                    <span className="route-chip-name">{summary.longName}</span>
+                    <span className="route-chip-meta">{summary.totalStops} stops</span>
                   </span>
                 </button>
               );
             })}
           </div>
         </fieldset>
+
+        {routeLoadError && <p className="route-load-error" role="alert">{routeLoadError}</p>}
 
         <fieldset>
           <legend>Direction</legend>
@@ -285,11 +300,9 @@ export function ConfigScreen({
       {networkOpen && (
         <NetworkOverview
           routes={routes}
-          selectedRouteId={route.route.id}
-          onSelect={(selected) => {
-            dispatch({ type: 'SELECT_ROUTE', route: selected });
-            onCloseNetwork();
-          }}
+          selectedRoute={route}
+          loadingRouteId={loadingRouteId}
+          onSelect={onSelectRoute}
           onClose={onCloseNetwork}
         />
       )}

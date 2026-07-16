@@ -5,6 +5,7 @@ import type { GameAction, GameState } from '../game/reducer';
 import { currentDirection } from '../game/reducer';
 import type { ColorTheme } from '../storage/local';
 import { ThemeToggle } from './ThemeToggle';
+import { TramLogo } from './TramLogo';
 
 interface CountdownScreenProps {
   state: GameState;
@@ -51,7 +52,10 @@ export function CountdownScreen({ state, dispatch, theme, onToggleTheme }: Count
     >
       <div className="countdown-lines" aria-hidden="true" />
       <ThemeToggle theme={theme} onToggle={onToggleTheme} className="screen-theme-toggle" />
-      <p className="brand countdown-brand">DING! MELBOURNE</p>
+      <p className="brand countdown-brand">
+        <TramLogo />
+        <span>DING! MELBOURNE</span>
+      </p>
       <div className="countdown-service">
         <span
           className="route-badge"

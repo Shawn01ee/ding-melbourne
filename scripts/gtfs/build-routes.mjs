@@ -17,7 +17,7 @@
  * Department of Transport and Planning, licensed under CC BY 4.0."
  */
 import { createReadStream } from 'node:fs';
-import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import readline from 'node:readline';
 
@@ -32,11 +32,12 @@ const args = Object.fromEntries(
 );
 const GTFS_DIR = args.gtfs;
 const OUT_DIR = args.out ?? 'src/data/generated';
+const INDEX_ONLY = process.argv.includes('--index-only');
 const ROUTE_ARG = args.routes ?? 'all';
 const ALL_ROUTES = ROUTE_ARG.trim().toLowerCase() === 'all';
 let targets = ALL_ROUTES ? [] : ROUTE_ARG.split(',').map((s) => s.trim()).filter(Boolean);
 const UPDATED = args.updated ?? new Date().toISOString().slice(0, 10);
-if (!GTFS_DIR) {
+if (!GTFS_DIR && !INDEX_ONLY) {
   console.error('Missing --gtfs <dir with routes.txt / trips.txt / stop_times.txt / stops.txt / shapes.txt>');
   process.exit(1);
 }
@@ -108,6 +109,36 @@ function subsample(points, max) {
   const step = (points.length - 1) / (max - 1);
   for (let i = 0; i < max; i++) out.push(points[Math.round(i * step)]);
   return out;
+}
+
+/** Build the small eager catalog used before any full route is requested. */
+async function writeOverviewIndex(outDir) {
+  const files = (await readdir(outDir))
+    .filter((file) => /^route-[a-z0-9-]+\.json$/i.test(file))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const routes = [];
+  let sourceUpdatedAt = '';
+  for (const file of files) {
+    const data = JSON.parse(await readFile(path.join(outDir, file), 'utf8'));
+    sourceUpdatedAt ||= data.sourceUpdatedAt;
+    routes.push({
+      id: data.route.id,
+      shortName: data.route.shortName,
+      longName: data.route.longName,
+      color: data.route.color,
+      totalStops: Math.max(...data.route.directions.map((direction) => direction.stops.length)),
+      directionCount: data.route.directions.length,
+      overviewShape: subsample(data.route.directions[0].shape, 64),
+    });
+  }
+  const index = { schemaVersion: 1, sourceUpdatedAt, routes };
+  await writeFile(path.join(outDir, 'index.json'), JSON.stringify(index));
+  console.log(`wrote ${path.join(outDir, 'index.json')}: ${routes.length} lightweight route summaries`);
+}
+
+if (INDEX_ONLY) {
+  await writeOverviewIndex(OUT_DIR);
+  process.exit(0);
 }
 
 /**
@@ -382,4 +413,5 @@ for (const short of targets) {
     `wrote ${outFile}: ${directions.map((d) => `${d.stops.length} stops/${d.shape.length} pts (${d.headsign})`).join(' | ')}`,
   );
 }
+await writeOverviewIndex(OUT_DIR);
 console.log('done');

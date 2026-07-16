@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { stopProgress } from '../data/types';
 import { projectCoordinates, projectPath } from './projection';
@@ -17,7 +18,7 @@ const LABEL_RADIUS = 1; // name only the immediate previous/next stop; others ar
 
 interface RouteCanvasProps {
   route: RouteData;
-  networkRoutes?: RouteData[];
+  networkRoutes?: RouteSummary[];
   directionIndex: number;
   stopIndex: number;
   startStopIndex: number;
@@ -74,10 +75,10 @@ export function RouteCanvas({
   const ghostPaths = useMemo(
     () =>
       networkRoutes
-        .filter((candidate) => candidate.route.id !== route.route.id)
+        .filter((candidate) => candidate.id !== route.route.id)
         .map((candidate) =>
           projectCoordinates(
-            candidate.route.directions[0].shape,
+            candidate.overviewShape,
             direction.shape,
             VIEW_W,
             VIEW_H,

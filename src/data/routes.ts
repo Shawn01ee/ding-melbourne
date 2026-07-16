@@ -1,48 +1,60 @@
+import rawIndex from './generated/index.json';
 import type { RouteData } from './types';
 import { validateRouteData } from './validate';
 
-/**
- * Every generated route is discovered automatically and validated once at
- * module load. Invalid routes are dropped (with a console warning) rather than
- * crashing the whole app, and the picker simply won't offer them.
- */
+export interface RouteSummary {
+  id: string;
+  shortName: string;
+  longName: string;
+  color: string;
+  totalStops: number;
+  directionCount: number;
+  /** Simplified first-direction geometry for the network overview and ghost map. */
+  overviewShape: [number, number][];
+}
+
+interface RouteIndex {
+  schemaVersion: number;
+  sourceUpdatedAt: string;
+  routes: RouteSummary[];
+}
+
+const index = rawIndex as RouteIndex;
 const generatedModules = import.meta.glob('./generated/route-*.json', {
-  eager: true,
   import: 'default',
 });
-const RAW: unknown[] = Object.values(generatedModules);
+const routeCache = new Map<string, Promise<RouteData>>();
 
-export interface AvailableRoute {
-  data: RouteData;
-  totalStops: number;
-}
-
-function buildRegistry(): AvailableRoute[] {
-  const out: AvailableRoute[] = [];
-  for (const raw of RAW) {
-    const result = validateRouteData(raw);
-    if (result.ok) {
-      const totalStops = Math.max(...result.data.route.directions.map((direction) => direction.stops.length));
-      out.push({ data: result.data, totalStops });
-    } else {
-      const id = (raw as RouteData)?.route?.id ?? 'unknown';
-      // eslint-disable-next-line no-console
-      console.warn(`Route "${id}" failed validation and was skipped:`, result.problems);
-    }
-  }
-  out.sort((a, b) => {
-    if (a.data.route.shortName === '96') return -1;
-    if (b.data.route.shortName === '96') return 1;
-    return Number(a.data.route.shortName) - Number(b.data.route.shortName)
-      || a.data.route.shortName.localeCompare(b.data.route.shortName);
+function sortRoutes(routes: RouteSummary[]): RouteSummary[] {
+  return [...routes].sort((a, b) => {
+    if (a.shortName === '96') return -1;
+    if (b.shortName === '96') return 1;
+    return Number(a.shortName) - Number(b.shortName) || a.shortName.localeCompare(b.shortName);
   });
-  return out;
 }
 
-export const AVAILABLE_ROUTES = buildRegistry();
+export const ROUTE_SOURCE_UPDATED_AT = index.sourceUpdatedAt;
+export const AVAILABLE_ROUTES = sortRoutes(index.routes);
+export const DEFAULT_ROUTE = AVAILABLE_ROUTES[0];
 
-export function findRoute(routeId: string): RouteData | undefined {
-  return AVAILABLE_ROUTES.find((r) => r.data.route.id === routeId)?.data;
+/** Load and validate one playable route only when the player asks for it. */
+export function loadRoute(routeId: string): Promise<RouteData> {
+  const cached = routeCache.get(routeId);
+  if (cached) return cached;
+
+  const summary = AVAILABLE_ROUTES.find((route) => route.id === routeId);
+  if (!summary) return Promise.reject(new Error(`Unknown route "${routeId}".`));
+  const loader = generatedModules[`./generated/route-${summary.shortName}.json`];
+  if (!loader) return Promise.reject(new Error(`Missing data file for Route ${summary.shortName}.`));
+
+  const pending = loader().then((raw) => {
+    const result = validateRouteData(raw);
+    if (!result.ok) {
+      throw new Error(`Route ${summary.shortName} failed validation: ${result.problems.join('; ')}`);
+    }
+    return result.data;
+  });
+  routeCache.set(routeId, pending);
+  pending.catch(() => routeCache.delete(routeId));
+  return pending;
 }
-
-export const DEFAULT_ROUTE = AVAILABLE_ROUTES[0]?.data;
