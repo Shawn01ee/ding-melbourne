@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { approachCue, errorTick, keyTick, stopArrivalCue } from '../audio/bell';
 import { ConfigScreen } from '../components/ConfigScreen';
 import { CountdownScreen } from '../components/CountdownScreen';
@@ -8,9 +8,11 @@ import { StopConsole } from '../components/StopConsole';
 import type { AvailableRoute } from '../data/routes';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
 import { RouteCanvas } from '../map/RouteCanvas';
-import { loadLastConfig, loadLastRouteId, loadSettings } from '../storage/local';
+import { loadLastConfig, loadLastRouteId, loadSettings, loadTheme, saveTheme } from '../storage/local';
 
 export function Game({ routes }: { routes: AvailableRoute[] }) {
+  const [theme, setTheme] = useState(loadTheme);
+  const [networkOpen, setNetworkOpen] = useState(false);
   const [state, dispatch] = useReducer(
     reducer,
     routes,
@@ -31,6 +33,13 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
   const target = targetText(state);
   const typedProgress = target.length > 0 ? [...state.input].length / [...target].length : 0;
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    saveTheme(theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((current) => current === 'day' ? 'night' : 'day');
+
   // Concise, browser-readable state for visual regression and accessibility
   // tooling. The SVG uses a follow camera, so route order is more useful than
   // raw screen coordinates here.
@@ -46,6 +55,9 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
         headsign: direction.headsign,
         mode: state.config.mode,
         difficulty: state.config.difficulty,
+        theme,
+        networkOverviewOpen: state.phase === 'config' && networkOpen,
+        networkRouteCount: networkRoutes.length,
         stopIndex: state.stopIndex,
         stopCount: direction.stops.length,
         currentStop: stop?.displayName ?? null,
@@ -62,7 +74,7 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
     return () => {
       delete testWindow.render_game_to_text;
     };
-  }, [route, state]);
+  }, [networkOpen, networkRoutes.length, route, state, theme]);
 
   // Clock tick while a run is live.
   useEffect(() => {
@@ -142,8 +154,21 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
   };
 
   if (state.phase === 'config')
-    return <ConfigScreen routes={routes} route={route} state={state} dispatch={dispatch} />;
-  if (state.phase === 'countdown') return <CountdownScreen state={state} dispatch={dispatch} />;
+    return (
+      <ConfigScreen
+        routes={routes}
+        route={route}
+        state={state}
+        dispatch={dispatch}
+        theme={theme}
+        networkOpen={networkOpen}
+        onToggleTheme={toggleTheme}
+        onOpenNetwork={() => setNetworkOpen(true)}
+        onCloseNetwork={() => setNetworkOpen(false)}
+      />
+    );
+  if (state.phase === 'countdown')
+    return <CountdownScreen state={state} dispatch={dispatch} theme={theme} onToggleTheme={toggleTheme} />;
   if (state.phase === 'finished')
     return (
       <ResultScreen
@@ -151,12 +176,14 @@ export function Game({ routes }: { routes: AvailableRoute[] }) {
         state={state}
         routes={networkRoutes}
         dispatch={dispatch}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
     );
 
   return (
     <div className="screen game-screen" ref={containerRef} onMouseDown={restoreFocus}>
-      <Hud state={state} dispatch={dispatch} />
+      <Hud state={state} dispatch={dispatch} theme={theme} onToggleTheme={toggleTheme} />
       <div className="map-area">
         <RouteCanvas
           route={route}

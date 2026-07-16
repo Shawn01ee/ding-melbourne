@@ -4,6 +4,9 @@ import type { GameConfig, Mode } from '../game/reducer';
 const KEY_SETTINGS = 'ding.settings.v1';
 const KEY_PERSONAL_BEST = 'ding.personalBest.v1';
 const KEY_LAST_CONFIG = 'ding.lastConfig.v1';
+const KEY_THEME = 'ding.theme.v1';
+
+export type ColorTheme = 'day' | 'night';
 
 export interface StoredSettings {
   soundOn: boolean;
@@ -18,6 +21,14 @@ export function loadLastRouteId(): string | null {
 
 export function saveLastRouteId(routeId: string): void {
   write(KEY_LAST_ROUTE, routeId);
+}
+
+export function loadTheme(): ColorTheme {
+  return read<ColorTheme>(KEY_THEME) === 'night' ? 'night' : 'day';
+}
+
+export function saveTheme(theme: ColorTheme): void {
+  write(KEY_THEME, theme);
 }
 
 export interface PersonalBest {

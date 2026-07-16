@@ -5,11 +5,15 @@ import { directionIndexOf, targetText, type GameAction, type GameState } from '.
 import { accuracyOf, elapsedMs, formatClock, scoreOf, totalRunStops, wpmOf } from '../game/selectors';
 import { RouteCanvas } from '../map/RouteCanvas';
 import { isBetter, loadBest, pbKey, saveBest, type PersonalBest } from '../storage/local';
+import type { ColorTheme } from '../storage/local';
+import { ThemeToggle } from './ThemeToggle';
 
 interface ResultScreenProps {
   state: GameState;
   routes: RouteData[];
   dispatch: (action: GameAction) => void;
+  theme: ColorTheme;
+  onToggleTheme: () => void;
 }
 
 function driverRank(accuracy: number, wpm: number, completed: boolean): string {
@@ -20,7 +24,7 @@ function driverRank(accuracy: number, wpm: number, completed: boolean): string {
   return 'ROUTE LEARNER';
 }
 
-export function ResultScreen({ state, routes, dispatch }: ResultScreenProps) {
+export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme }: ResultScreenProps) {
   // Compare-and-save synchronously once on mount so the pre-run PB is shown.
   const [{ previous, isNew, result }] = useState(() => {
     const key = pbKey(state.route.route.id, state.config);
@@ -65,6 +69,7 @@ export function ResultScreen({ state, routes, dispatch }: ResultScreenProps) {
       className="screen result-screen"
       style={{ '--result-route': state.route.route.color } as CSSProperties}
     >
+      <ThemeToggle theme={theme} onToggle={onToggleTheme} className="screen-theme-toggle" />
       <div className="result-map" aria-hidden="true">
         <RouteCanvas
           route={state.route}

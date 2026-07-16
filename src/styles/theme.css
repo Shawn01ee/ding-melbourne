@@ -1,0 +1,438 @@
+/* Theme controls + full Melbourne network overview. Loaded after global.css. */
+
+.config-hero h1 {
+  line-height: 0.86;
+  letter-spacing: -0.055em;
+  text-wrap: nowrap;
+}
+
+.config-hero h1 span { display: block; }
+.config-hero h1 span + span { margin-top: 0.045em; }
+
+.config-utilities {
+  position: fixed;
+  z-index: 50;
+  top: 22px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.network-open,
+.theme-toggle,
+.network-close {
+  min-height: 44px;
+  border: 1px solid rgb(23 33 29 / 0.12);
+  background: var(--glass);
+  color: var(--charcoal);
+  box-shadow: 0 10px 28px rgb(23 33 29 / 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.network-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.network-open > span:first-child {
+  color: var(--cockpit-green);
+  font-size: 1rem;
+}
+
+.theme-toggle {
+  display: inline-grid;
+  grid-template-columns: 30px 30px;
+  align-items: center;
+  padding: 4px;
+  border-radius: 999px;
+}
+
+.theme-toggle-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.theme-toggle-icon.active {
+  background: var(--charcoal);
+  color: var(--cream);
+  box-shadow: 0 3px 9px rgb(23 33 29 / 0.18);
+}
+
+.theme-toggle-label { display: none; }
+
+.screen-theme-toggle {
+  position: absolute;
+  z-index: 80;
+  top: 22px;
+  right: 24px;
+}
+
+.hud .hud-theme-toggle {
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.hud .hud-theme-toggle .theme-toggle-icon {
+  width: 27px;
+  height: 27px;
+}
+
+.network-overview-backdrop {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(7 19 28 / 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.network-overview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1440px, 100%);
+  height: min(880px, calc(100dvh - 40px));
+  overflow: hidden;
+  border: 2px solid var(--charcoal);
+  border-radius: 30px;
+  background: var(--card);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 0.3);
+}
+
+.network-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.network-overview-header p,
+.network-overview-header h2,
+.network-overview-header span { margin: 0; }
+
+.network-overview-header p {
+  color: var(--cockpit-green);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.network-overview-header h2 {
+  margin-top: 2px;
+  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.network-overview-header > div > span {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.network-close {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  min-height: 54px;
+  border-radius: 18px;
+}
+
+.network-close span { font-size: 1.5rem; line-height: 0.7; }
+.network-close small {
+  color: var(--muted);
+  font-size: 0.48rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.network-overview-map {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--map-paper);
+}
+
+.network-overview-map svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.network-map-paper { fill: var(--map-paper); }
+.network-dot { fill: var(--map-ink); opacity: 0.28; }
+
+.network-map-label {
+  fill: var(--charcoal);
+  font-size: 62px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  opacity: 0.06;
+}
+
+.network-map-compass {
+  fill: var(--muted);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.network-line polyline {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.78;
+  vector-effect: non-scaling-stroke;
+}
+
+.network-line .network-line-casing {
+  stroke: color-mix(in srgb, var(--map-paper) 86%, var(--charcoal));
+  stroke-width: 8;
+  opacity: 0.86;
+}
+
+.network-line.selected polyline:not(.network-line-casing) {
+  stroke-width: 7;
+  opacity: 1;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.18));
+}
+
+.network-line circle {
+  stroke: var(--map-paper);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.network-map-caption {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--glass);
+  box-shadow: 0 10px 24px rgb(23 33 29 / 0.1);
+  backdrop-filter: blur(14px);
+}
+
+.network-map-caption strong { font-size: 0.7rem; }
+.network-map-caption span { color: var(--muted); font-size: 0.57rem; }
+
+.network-route-legend {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  max-height: 130px;
+  padding: 10px 14px 14px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.network-route-key {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--charcoal);
+  text-align: left;
+}
+
+.network-route-key:hover,
+.network-route-key.selected {
+  border-color: var(--line);
+  background: var(--cream);
+}
+
+.network-route-key > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+.network-route-key small {
+  overflow: hidden;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Route colours stay vivid against blue-black map paper in night mode. */
+html[data-theme='night'] {
+  --cream: #07131f;
+  --charcoal: #edf4f1;
+  --tram-green: #6dca7e;
+  --accent: #f04caa;
+  --muted: #96a8af;
+  --wrong: #ff7566;
+  --card: #102330;
+  --line: #2b414e;
+  --map-paper: #081722;
+  --map-ink: #526c7d;
+  --cockpit-green: #19ad6c;
+  --cockpit-deep: #006f49;
+  --glass: rgb(13 31 42 / 0.9);
+  --lifted-shadow: 0 18px 55px rgb(0 0 0 / 0.38);
+  color-scheme: dark;
+}
+
+html[data-theme='night'] body { background: var(--cream); }
+
+html[data-theme='night'] .config-screen {
+  background:
+    radial-gradient(circle at 18% 12%, rgb(35 69 82 / 0.38), transparent 30%),
+    linear-gradient(135deg, #07131f 0%, #081925 58%, #0b2029 100%);
+}
+
+html[data-theme='night'] .config-network { opacity: 0.28; }
+html[data-theme='night'] .config-network path:nth-child(1) { stroke: color-mix(in srgb, var(--route-color) 45%, #26404d); }
+html[data-theme='night'] .config-network path:nth-child(2) { stroke: #274453; }
+html[data-theme='night'] .config-network path:nth-child(3) { stroke: #493b38; }
+html[data-theme='night'] .config-network path:nth-child(4) { stroke: #373752; }
+html[data-theme='night'] .config-network path:nth-child(5) { stroke: #23483f; }
+
+html[data-theme='night'] .config-hero .sub,
+html[data-theme='night'] .config-instruction,
+html[data-theme='night'] .config-footer,
+html[data-theme='night'] .config-card legend,
+html[data-theme='night'] .route-chip-meta { color: var(--muted); }
+
+html[data-theme='night'] .journey-preview,
+html[data-theme='night'] .config-card,
+html[data-theme='night'] .hud-service-card,
+html[data-theme='night'] .hud-right,
+html[data-theme='night'] .journey-board,
+html[data-theme='night'] .countdown-service {
+  border-color: var(--line);
+  background: var(--glass);
+}
+
+html[data-theme='night'] .config-card .route-chip,
+html[data-theme='night'] .config-card .option,
+html[data-theme='night'] .config-card select {
+  border-color: var(--line);
+  background: #0b1d29;
+}
+
+html[data-theme='night'] .config-card .route-chip.selected { background: #152d39; }
+
+html[data-theme='night'] .config-card .option.selected,
+html[data-theme='night'] .config-card .option[aria-checked='true'] {
+  border-color: var(--cockpit-green);
+  background: var(--cockpit-deep);
+  color: #fff;
+}
+
+html[data-theme='night'] kbd,
+html[data-theme='night'] .network-open,
+html[data-theme='night'] .theme-toggle,
+html[data-theme='night'] .network-close {
+  border-color: var(--line);
+  background: var(--glass);
+}
+
+html[data-theme='night'] .countdown-screen,
+html[data-theme='night'] .result-screen {
+  background:
+    radial-gradient(circle at center, rgb(28 58 69 / 0.52), transparent 44%),
+    var(--map-paper);
+}
+
+html[data-theme='night'] .countdown-lines {
+  opacity: 0.34;
+  filter: brightness(0.48) saturate(1.3);
+}
+
+html[data-theme='night'] .countdown-route { color: var(--muted); }
+html[data-theme='night'] .map-grid-dot { fill: #607987; }
+html[data-theme='night'] .map-side-caption,
+html[data-theme='night'] .map-watermark { fill: #7a919d; }
+
+html[data-theme='night'] .ghost-network { stroke: #29404c; opacity: 0.58; }
+html[data-theme='night'] .ghost-network polyline:nth-child(1) { stroke: #2c4656; }
+html[data-theme='night'] .ghost-network polyline:nth-child(2) { stroke: #493e3a; }
+html[data-theme='night'] .ghost-network polyline:nth-child(3) { stroke: #29483f; }
+html[data-theme='night'] .ghost-network polyline:nth-child(4) { stroke: #3c3b53; }
+html[data-theme='night'] .ghost-network polyline:nth-child(5) { stroke: #474637; }
+html[data-theme='night'] .rail-casing { stroke: #213743; }
+
+html[data-theme='night'] .hud .hud-theme-toggle { background: transparent; }
+html[data-theme='night'] .hud-button:hover { background: #1c3542; }
+html[data-theme='night'] .console .stat-card,
+html[data-theme='night'] .console-hint,
+html[data-theme='night'] .typing-stop,
+html[data-theme='night'] .pause-card { background: rgb(14 32 43 / 0.96); }
+
+html[data-theme='night'] .console .stat-card { border-color: var(--charcoal); }
+html[data-theme='night'] .console .stat-card .hud-stat { border-color: var(--line); }
+html[data-theme='night'] .console-hint { border-color: var(--line); color: #b5c4c8; }
+html[data-theme='night'] .typing-stop {
+  border-color: rgb(25 173 108 / 0.28);
+  box-shadow: 0 20px 45px rgb(0 0 0 / 0.42), inset 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+
+html[data-theme='night'] .result-screen::before { background: rgb(3 12 18 / 0.35); }
+
+@media (max-width: 1000px) {
+  .config-utilities { position: absolute; }
+  .config-hero h1 { font-size: clamp(2.8rem, 9vw, 5rem); }
+  .network-route-legend { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .config-screen { padding-top: 88px; }
+  .config-utilities { top: 18px; right: 18px; }
+  .network-open > span:last-child { display: none; }
+  .network-open { width: 44px; justify-content: center; padding: 4px; }
+  .config-hero h1 {
+    font-size: clamp(2.65rem, 14vw, 4.25rem);
+    line-height: 0.87;
+  }
+  .screen-theme-toggle { top: 14px; right: 14px; }
+  .hud .hud-theme-toggle { display: none; }
+  .network-overview-backdrop { padding: 0; }
+  .network-overview { height: 100dvh; border: 0; border-radius: 0; }
+  .network-overview-header { padding: 14px; }
+  .network-overview-header > div > span { display: none; }
+  .network-overview-map { min-height: 390px; }
+  .network-map-caption { right: 10px; bottom: 10px; left: 10px; }
+  .network-route-legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: 180px;
+    padding: 8px;
+  }
+  .network-route-key { grid-template-columns: 1fr; padding: 3px; }
+  .network-route-key small { display: none; }
+  .network-route-key > span { min-height: 28px; }
+}

@@ -1,11 +1,13 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { primeAudio } from '../audio/bell';
+import { NetworkOverview } from './NetworkOverview';
+import { ThemeToggle } from './ThemeToggle';
 import type { AvailableRoute } from '../data/routes';
 import type { RouteData } from '../data/types';
 import type { GameAction, GameState, Mode } from '../game/reducer';
 import { directionIndexOf, SECTION_LENGTH } from '../game/reducer';
 import { stopShortName } from '../game/selectors';
-import { saveLastConfig, saveLastRouteId, saveSettings } from '../storage/local';
+import { saveLastConfig, saveLastRouteId, saveSettings, type ColorTheme } from '../storage/local';
 import { BRAND, TAGLINE, inkForBackground } from '../brand';
 
 interface ConfigScreenProps {
@@ -13,6 +15,11 @@ interface ConfigScreenProps {
   route: RouteData;
   state: GameState;
   dispatch: (action: GameAction) => void;
+  theme: ColorTheme;
+  networkOpen: boolean;
+  onToggleTheme: () => void;
+  onOpenNetwork: () => void;
+  onCloseNetwork: () => void;
 }
 
 const MODES: [Mode, string, string][] = [
@@ -21,7 +28,17 @@ const MODES: [Mode, string, string][] = [
   ['sprint', '60s Sprint', 'As many as you can'],
 ];
 
-export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenProps) {
+export function ConfigScreen({
+  routes,
+  route,
+  state,
+  dispatch,
+  theme,
+  networkOpen,
+  onToggleTheme,
+  onOpenNetwork,
+  onCloseNetwork,
+}: ConfigScreenProps) {
   const { config } = state;
   const selectedRouteRef = useRef<HTMLButtonElement>(null);
   const direction = route.route.directions[directionIndexOf(state)];
@@ -39,6 +56,7 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
     saveLastRouteId(route.route.id);
     saveLastConfig(config);
     saveSettings({ soundOn: config.soundOn, difficulty: config.difficulty });
+    onCloseNetwork();
     dispatch({ type: 'START', at: Date.now() });
   };
 
@@ -67,10 +85,23 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
         <path d="M-70 470 L280 305 L620 315 L910 590 L1450 690" />
       </svg>
 
+      <div className="config-utilities" aria-label="Display controls">
+        <button type="button" className="network-open" onClick={onOpenNetwork}>
+          <span aria-hidden="true">⌘</span>
+          <span>Network map</span>
+        </button>
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+      </div>
+
       <header className="config-hero">
         <p className="config-kicker">Melbourne tram typing game</p>
         <p className="brand config-brand">{BRAND}</p>
-        <h1>{TAGLINE}</h1>
+        <h1 aria-label={TAGLINE}>
+          <span>MISS YOUR</span>
+          <span>STOP? DON'T</span>
+          <span>MISS THE</span>
+          <span>SPELLING.</span>
+        </h1>
         <p className="sub">Pick a line, learn the stops, and drive it one perfect word at a time.</p>
 
         <div className="journey-preview" aria-label="Selected journey">
@@ -250,6 +281,18 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
           .
         </p>
       </footer>
+
+      {networkOpen && (
+        <NetworkOverview
+          routes={routes}
+          selectedRouteId={route.route.id}
+          onSelect={(selected) => {
+            dispatch({ type: 'SELECT_ROUTE', route: selected });
+            onCloseNetwork();
+          }}
+          onClose={onCloseNetwork}
+        />
+      )}
     </main>
   );
 }

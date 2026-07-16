@@ -3,14 +3,18 @@ import { clickTick, departureCue } from '../audio/bell';
 import { inkForBackground } from '../brand';
 import type { GameAction, GameState } from '../game/reducer';
 import { currentDirection } from '../game/reducer';
+import type { ColorTheme } from '../storage/local';
+import { ThemeToggle } from './ThemeToggle';
 
 interface CountdownScreenProps {
   state: GameState;
   dispatch: (action: GameAction) => void;
+  theme: ColorTheme;
+  onToggleTheme: () => void;
 }
 
 /** 3-2-1 on first start; a single fast beat on restart (fast-reset principle). */
-export function CountdownScreen({ state, dispatch }: CountdownScreenProps) {
+export function CountdownScreen({ state, dispatch, theme, onToggleTheme }: CountdownScreenProps) {
   const [count, setCount] = useState(state.quickRestart ? 1 : 3);
   const direction = currentDirection(state);
   const firstStop = state.route.stops[direction.stops[state.config.startStopIndex]];
@@ -46,6 +50,7 @@ export function CountdownScreen({ state, dispatch }: CountdownScreenProps) {
       aria-live="assertive"
     >
       <div className="countdown-lines" aria-hidden="true" />
+      <ThemeToggle theme={theme} onToggle={onToggleTheme} className="screen-theme-toggle" />
       <p className="brand countdown-brand">DING! MELBOURNE</p>
       <div className="countdown-service">
         <span

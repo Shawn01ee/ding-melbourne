@@ -3,14 +3,18 @@ import type { GameAction, GameState } from '../game/reducer';
 import { currentDirection } from '../game/reducer';
 import { stopAt, stopShortName, totalRunStops } from '../game/selectors';
 import { BRAND, inkForBackground } from '../brand';
+import type { ColorTheme } from '../storage/local';
+import { ThemeToggle } from './ThemeToggle';
 
 interface HudProps {
   state: GameState;
   dispatch: (action: GameAction) => void;
+  theme: ColorTheme;
+  onToggleTheme: () => void;
 }
 
 /** Slim top bar: identity + controls. Run metrics live in the floating StatCard. */
-export function Hud({ state, dispatch }: HudProps) {
+export function Hud({ state, dispatch, theme, onToggleTheme }: HudProps) {
   const direction = currentDirection(state);
   const origin = stopAt(state, state.config.startStopIndex);
   const destination = stopAt(state, state.config.startStopIndex + totalRunStops(state) - 1);
@@ -47,6 +51,7 @@ export function Hud({ state, dispatch }: HudProps) {
       </div>
 
       <div className="hud-right">
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} className="hud-theme-toggle" />
         <button
           type="button"
           className="hud-button"

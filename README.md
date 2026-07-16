@@ -10,7 +10,8 @@ all 24 metropolitan tram routes in the 10 July 2026 Transport Victoria GTFS
 Schedule (both directions where published; Route 35 City Circle is circular).
 Modes: Full Route, 10-Stop Section, 60-second Sprint. Standard and Driver
 difficulties, responsive synthesized tram sounds, a follow-camera for long
-lines, local personal bests, no backend.
+lines, a day/night theme, a complete 24-route network overview, local personal
+bests, no backend.
 
 ## Run
 
@@ -28,7 +29,7 @@ npm run build     # typecheck + production build
   SVG route map with animated tram, localStorage personal bests.
 - ✅ Phase 2: GTFS preprocessing pipeline ([scripts/gtfs/](scripts/gtfs/)) generating
   all 24 currently published tram routes; scrollable route picker, Section mode,
-  follow-camera.
+  follow-camera, and a selectable whole-network map.
 - ⬜ Next: web font + branding polish, result sharing, then accounts + leaderboard
   (Supabase) with server-side score validation.
 
