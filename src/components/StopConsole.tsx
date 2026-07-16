@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { inkForBackground } from '../brand';
 import { charStatuses } from '../game/normalize';
 import type { GameAction, GameState } from '../game/reducer';
 import { targetText } from '../game/reducer';
@@ -25,7 +26,7 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
   const prev = previousStop(state);
   const current = currentStop(state);
   const next = nextStop(state);
-  const typingActive = state.phase === 'typing' || state.phase === 'ready';
+  const typingActive = state.phase === 'typing';
   const routeColor = state.route.route.color;
 
   // Auto-focus when a stop opens for typing (AC-01) and keep focus per stop.
@@ -45,9 +46,17 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
   }, [state.errors]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (state.phase === 'ready' && (e.key === 'Enter' || e.key === ' ')) {
+    if (!typingActive || e.nativeEvent.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Backspace') {
       e.preventDefault();
-      dispatch({ type: 'DEPART', at: Date.now() });
+      dispatch({ type: 'INPUT', value: [...state.input].slice(0, -1).join(''), at: Date.now() });
+      return;
+    }
+    if (e.key.length === 1) {
+      // Drive the game from accepted characters rather than the browser's raw
+      // text value. Wrong keys are counted by the reducer but never stick.
+      e.preventDefault();
+      dispatch({ type: 'INPUT', value: state.input + e.key, at: Date.now() });
     }
   };
 
@@ -76,27 +85,56 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
   return (
     <section className={`console${shake ? ' shake' : ''}`} aria-label="Typing console">
       <StatCard state={state} />
-      <div className="console-bar" style={{ background: routeColor }}>
+      <p
+        className={`console-hint${typingActive && !focused ? ' warn' : ''}`}
+        aria-live="polite"
+      >
+        {typingActive && !focused ? (
+          'Click the stop name box, then type'
+        ) : (
+          <><kbd>TYPE</kbd> Wrong keys do not stick · complete the stop to ring the bell</>
+        )}
+      </p>
+      <span className="sr-only" aria-live="polite">
+        Stop {state.stopsCompleted + 1}: {current.displayName}
+      </span>
+
+      <div
+        className="console-bar"
+        style={{ '--route-color': routeColor } as CSSProperties}
+      >
         <div className="bar-side bar-prev">
-          {prev && (
+          {prev ? (
             <>
+              <span className="bar-arrow bar-arrow-back" aria-hidden="true">←</span>
               {prev.stopNumber && <span className="roundel">#{prev.stopNumber}</span>}
               <div className="side-text">
                 <span className="side-label">Previous</span>
                 <span className="side-name">{stopShortName(prev)}</span>
               </div>
             </>
+          ) : (
+            <>
+              <span className="bar-arrow bar-arrow-back" aria-hidden="true">←</span>
+              <div className="side-text">
+                <span className="side-label">Route {state.route.route.shortName}</span>
+                <span className="side-name">Start of run</span>
+              </div>
+            </>
           )}
         </div>
 
         <div
-          className={`stop-slot stop-current${state.phase === 'ready' ? ' complete' : ''}${
+          className={`stop-slot typing-stop${state.input ? ' has-progress' : ''}${
             typingActive && !focused ? ' unfocused' : ''
           }`}
           onClick={() => inputRef.current?.focus()}
         >
           {current.stopNumber && (
-            <span className="capsule-roundel" style={{ background: routeColor }}>
+            <span
+              className="capsule-roundel"
+              style={{ background: routeColor, color: inkForBackground(routeColor) }}
+            >
               #{current.stopNumber}
             </span>
           )}
@@ -169,24 +207,11 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
               <span className="side-name">End of the line</span>
             </div>
           )}
-          <span className={`bar-arrow${state.phase === 'ready' ? ' go' : ''}`} aria-hidden="true">
+          <span className={`bar-arrow${state.input ? ' go' : ''}`} aria-hidden="true">
             →
           </span>
         </div>
       </div>
-
-      <p
-        className={`console-hint${state.phase === 'ready' ? ' ready' : ''}${
-          typingActive && !focused ? ' warn' : ''
-        }`}
-        aria-live="polite"
-      >
-        {typingActive && !focused
-          ? 'Click the stop name box, then type'
-          : state.phase === 'ready'
-            ? 'Ding! Press Enter or Space to depart'
-            : `Type the current stop name (${state.config.difficulty})`}
-      </p>
     </section>
   );
 }

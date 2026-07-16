@@ -10,14 +10,14 @@
  *   node scripts/gtfs/build-routes.mjs \
  *     --gtfs /path/to/extracted/tram \
  *     --out src/data/generated \
- *     --routes 96,86,109,58,1 \
+ *     --routes all \
  *     --updated 2026-07-10
  *
  * Data: "Contains public transport data supplied by the Victorian
  * Department of Transport and Planning, licensed under CC BY 4.0."
  */
 import { createReadStream } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import readline from 'node:readline';
 
@@ -32,7 +32,9 @@ const args = Object.fromEntries(
 );
 const GTFS_DIR = args.gtfs;
 const OUT_DIR = args.out ?? 'src/data/generated';
-const TARGETS = (args.routes ?? '96,86,109,58,1').split(',').map((s) => s.trim());
+const ROUTE_ARG = args.routes ?? 'all';
+const ALL_ROUTES = ROUTE_ARG.trim().toLowerCase() === 'all';
+let targets = ALL_ROUTES ? [] : ROUTE_ARG.split(',').map((s) => s.trim()).filter(Boolean);
 const UPDATED = args.updated ?? new Date().toISOString().slice(0, 10);
 if (!GTFS_DIR) {
   console.error('Missing --gtfs <dir with routes.txt / trips.txt / stop_times.txt / stops.txt / shapes.txt>');
@@ -193,12 +195,12 @@ const slug = (s) =>
 
 // ---------- main ----------
 console.log(`GTFS source: ${GTFS_DIR}`);
-console.log(`Routes: ${TARGETS.join(', ')} · updated ${UPDATED}`);
+console.log(`Requested routes: ${ALL_ROUTES ? 'all metropolitan tram routes' : targets.join(', ')} · updated ${UPDATED}`);
 
 // Pass 1: routes.txt -> target route ids + metadata
 const routeMeta = new Map(); // route_id -> {short, long, color}
 for await (const r of rows('routes.txt')) {
-  if (TARGETS.includes(r.route_short_name)) {
+  if (ALL_ROUTES || targets.includes(r.route_short_name)) {
     routeMeta.set(r.route_id, {
       short: r.route_short_name,
       long: r.route_long_name,
@@ -206,10 +208,16 @@ for await (const r of rows('routes.txt')) {
     });
   }
 }
+if (ALL_ROUTES) {
+  targets = [...routeMeta.values()]
+    .map((meta) => meta.short)
+    .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+}
 const foundShorts = new Set([...routeMeta.values()].map((m) => m.short));
-for (const t of TARGETS) {
+for (const t of targets) {
   if (!foundShorts.has(t)) throw new Error(`route ${t} not found in routes.txt`);
 }
+console.log(`Resolved routes (${targets.length}): ${targets.join(', ')}`);
 
 // Pass 2: trips.txt -> trips of target routes
 const trips = new Map(); // trip_id -> {short, dir, shapeId, headsign}
@@ -282,12 +290,24 @@ for await (const p of rows('shapes.txt')) {
 
 // ---------- build game JSON per route ----------
 await mkdir(OUT_DIR, { recursive: true });
-for (const short of TARGETS) {
+if (ALL_ROUTES) {
+  for (const file of await readdir(OUT_DIR)) {
+    if (/^route-[a-z0-9-]+\.json$/i.test(file)) await unlink(path.join(OUT_DIR, file));
+  }
+}
+
+for (const short of targets) {
   const meta = [...routeMeta.values()].find((m) => m.short === short);
   const directions = [];
   const stopsDict = {};
 
-  for (const dir of [0, 1]) {
+  const directionIds = [...best.keys()]
+    .filter((key) => key.startsWith(`${short}:`))
+    .map((key) => Number(key.slice(key.lastIndexOf(':') + 1)))
+    .sort((a, b) => a - b);
+  if (directionIds.length === 0) throw new Error(`route ${short}: no trips found`);
+
+  for (const dir of directionIds) {
     const b = best.get(`${short}:${dir}`);
     if (!b) throw new Error(`route ${short} direction ${dir}: no trips found`);
     const rawShape = (shapePts.get(b.shapeId) ?? [])
@@ -337,8 +357,10 @@ for (const short of TARGETS) {
     });
   }
 
-  // direction ids must be unique within a route
-  if (directions[0].id === directions[1].id) directions[1].id += '-return';
+  // Direction ids must be unique within a route, including circular routes.
+  directions.forEach((direction, i) => {
+    if (directions.slice(0, i).some((other) => other.id === direction.id)) direction.id += `-${i + 1}`;
+  });
 
   const json = {
     schemaVersion: 2,

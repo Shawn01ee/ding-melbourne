@@ -134,6 +134,8 @@ describe('TYPING input accounting', () => {
     expect(s.totalKeystrokes).toBe(1);
     expect(s.correctKeystrokes).toBe(1);
     expect(s.errors).toBe(0);
+    expect(s.streak).toBe(1);
+    expect(s.bestStreak).toBe(1);
     expect(s.phase).toBe('typing');
   });
 
@@ -142,20 +144,30 @@ describe('TYPING input accounting', () => {
     const s = reducer(base, { type: 'INPUT', value: wrongChar(base), at: T0 + 100 });
     expect(s.errors).toBe(1);
     expect(s.stopHadError).toBe(true);
+    expect(s.input).toBe('');
+    expect(s.streak).toBe(0);
     expect(s.stopIndex).toBe(0);
     expect(s.phase).toBe('typing');
   });
 
+  it('rejects a wrong key and accepts the expected key next without backspace', () => {
+    const base = startTyping();
+    const wrong = reducer(base, { type: 'INPUT', value: wrongChar(base), at: T0 + 100 });
+    const s = reducer(wrong, { type: 'INPUT', value: firstChar(base), at: T0 + 200 });
+    expect(s.input).toBe(firstChar(base));
+    expect(s.totalKeystrokes).toBe(2);
+    expect(s.correctKeystrokes).toBe(1);
+    expect(s.errors).toBe(1);
+  });
+
   it('keeps totals after backspace (PRD §8)', () => {
     const base = startTyping();
-    const s = run(
-      base,
-      { type: 'INPUT', value: wrongChar(base), at: T0 + 100 },
-      { type: 'INPUT', value: '', at: T0 + 200 },
-    );
+    const typed = reducer(base, { type: 'INPUT', value: firstChar(base), at: T0 + 100 });
+    const s = reducer(typed, { type: 'INPUT', value: '', at: T0 + 200 });
     expect(s.totalKeystrokes).toBe(1);
-    expect(s.errors).toBe(1);
+    expect(s.correctKeystrokes).toBe(1);
     expect(s.input).toBe('');
+    expect(s.streak).toBe(0);
   });
 
   it('is case-insensitive on standard difficulty', () => {
@@ -164,74 +176,70 @@ describe('TYPING input accounting', () => {
     expect(s.correctKeystrokes).toBe(1);
   });
 
-  it('completing the answer transitions to ready, not auto-move (PRD §8)', () => {
+  it('completing the answer immediately opens the next stop', () => {
     const s = typeAnswer(startTyping(), T0 + 500);
-    expect(s.phase).toBe('ready');
-    expect(s.stopIndex).toBe(0);
+    expect(s.phase).toBe('typing');
+    expect(s.stopIndex).toBe(1);
+    expect(s.stopsCompleted).toBe(1);
+    expect(s.input).toBe('');
   });
 
-  it('editing in ready drops back to typing', () => {
-    const s = typeAnswer(startTyping(), T0 + 500);
-    const s2 = reducer(s, { type: 'INPUT', value: s.input.slice(0, -1), at: T0 + 600 });
-    expect(s2.phase).toBe('typing');
+  it('ignores non-prefix replacement edits', () => {
+    const base = startTyping();
+    const s = reducer(base, { type: 'INPUT', value: firstChar(base), at: T0 + 100 });
+    expect(reducer(s, { type: 'INPUT', value: 'replacement', at: T0 + 200 })).toBe(s);
   });
 
-  it('ignores input outside typing/ready', () => {
+  it('ignores input outside typing', () => {
     const s = fresh();
     expect(reducer(s, { type: 'INPUT', value: 'x', at: T0 }).input).toBe('');
   });
 
   it('INVALID_ACTION (paste) counts one error keystroke', () => {
-    const s = reducer(startTyping(), { type: 'INVALID_ACTION' });
-    expect(s.totalKeystrokes).toBe(1);
+    const base = startTyping();
+    const typed = reducer(base, { type: 'INPUT', value: firstChar(base), at: T0 + 50 });
+    const s = reducer(typed, { type: 'INVALID_ACTION' });
+    expect(s.totalKeystrokes).toBe(2);
+    expect(s.correctKeystrokes).toBe(1);
     expect(s.errors).toBe(1);
     expect(s.stopHadError).toBe(true);
+    expect(s.streak).toBe(0);
   });
 });
 
-describe('DEPART / MOVING', () => {
-  it('DEPART is ignored while still typing', () => {
-    const s = reducer(startTyping(), { type: 'DEPART', at: T0 + 100 });
+describe('UNINTERRUPTED STOP ADVANCE', () => {
+  it('raises combo for every correct character and carries it into the next stop', () => {
+    const base = startTyping();
+    const answerLength = [...targetText(base)].length;
+    const s = typeAnswer(base, T0 + 500);
     expect(s.phase).toBe('typing');
+    expect(s.stopsCompleted).toBe(1);
+    expect(s.streak).toBe(answerLength);
+    expect(s.bestStreak).toBe(answerLength);
+
+    const continued = reducer(s, { type: 'INPUT', value: firstChar(s), at: T0 + 501 });
+    expect(continued.streak).toBe(answerLength + 1);
+    expect(continued.bestStreak).toBe(answerLength + 1);
   });
 
-  it('DEPART from ready enters moving, counts the stop and streak (AC-03)', () => {
-    const s = reducer(typeAnswer(startTyping(), T0 + 500), { type: 'DEPART', at: T0 + 600 });
-    expect(s.phase).toBe('moving');
-    expect(s.stopsCompleted).toBe(1);
+  it('a wrong character resets combo but the following correct character starts it again', () => {
+    let s = startTyping();
+    s = reducer(s, { type: 'INPUT', value: firstChar(s), at: T0 + 25 });
+    expect(s.streak).toBe(1);
+    s = reducer(s, { type: 'INPUT', value: s.input + wrongChar(s), at: T0 + 50 });
+    expect(s.streak).toBe(0);
+    s = reducer(s, { type: 'INPUT', value: s.input + [...targetText(s)][1], at: T0 + 75 });
     expect(s.streak).toBe(1);
     expect(s.bestStreak).toBe(1);
   });
 
-  it('a stop passed with an error resets the streak', () => {
-    let s = startTyping();
-    s = reducer(s, { type: 'INPUT', value: wrongChar(s), at: T0 + 50 });
-    s = reducer(s, { type: 'INPUT', value: '', at: T0 + 60 });
-    s = typeAnswer(s, T0 + 500);
-    s = reducer(s, { type: 'DEPART', at: T0 + 600 });
-    expect(s.streak).toBe(0);
-  });
-
-  it('input is locked during moving', () => {
-    const s = reducer(typeAnswer(startTyping(), T0 + 500), { type: 'DEPART', at: T0 + 600 });
-    expect(reducer(s, { type: 'INPUT', value: 'x', at: T0 + 700 }).input).toBe('');
-  });
-
-  it('MOVE_DONE advances to the next stop and reopens typing', () => {
-    const s = run(
-      typeAnswer(startTyping(), T0 + 500),
-      { type: 'DEPART', at: T0 + 600 },
-      { type: 'MOVE_DONE', at: T0 + 1200 },
-    );
-    expect(s.phase).toBe('typing');
+  it('accepts the first key of the next stop immediately', () => {
+    const advanced = typeAnswer(startTyping(), T0 + 500);
+    const nextChar = firstChar(advanced);
+    const s = reducer(advanced, { type: 'INPUT', value: nextChar, at: T0 + 501 });
     expect(s.stopIndex).toBe(1);
-    expect(s.input).toBe('');
-    expect(s.stopHadError).toBe(false);
-  });
-
-  it('MOVE_DONE is ignored outside moving', () => {
-    const s = startTyping();
-    expect(reducer(s, { type: 'MOVE_DONE', at: T0 + 100 }).stopIndex).toBe(0);
+    expect(s.input).toBe(nextChar);
+    expect(s.totalKeystrokes).toBe(advanced.totalKeystrokes + 1);
   });
 });
 
@@ -241,11 +249,7 @@ describe('FINISHED', () => {
     const stopsCount = route.route.directions[0].stops.length;
     for (let i = 0; i < stopsCount; i++) {
       s = typeAnswer(s, T0 + 1000 * (i + 1));
-      s = reducer(s, { type: 'DEPART', at: T0 + 1000 * (i + 1) + 500 });
-      if (i < stopsCount - 1) {
-        expect(s.phase).toBe('moving');
-        s = reducer(s, { type: 'MOVE_DONE', at: T0 + 1000 * (i + 1) + 900 });
-      }
+      if (i < stopsCount - 1) expect(s.phase).toBe('typing');
     }
     expect(s.phase).toBe('finished');
     expect(s.finishReason).toBe('completed');
@@ -263,8 +267,6 @@ describe('FINISHED', () => {
     );
     for (let i = 0; i < 2; i++) {
       s = typeAnswer(s, T0 + 1000 * (i + 1));
-      s = reducer(s, { type: 'DEPART', at: T0 + 1000 * (i + 1) + 500 });
-      if (s.phase === 'moving') s = reducer(s, { type: 'MOVE_DONE', at: T0 + 1000 * (i + 1) + 900 });
     }
     expect(s.phase).toBe('finished');
     expect(s.stopsCompleted).toBe(2);
@@ -280,11 +282,7 @@ describe('FINISHED', () => {
     expect(totalRunStops(s)).toBe(SECTION_LENGTH); // fixture has 12 > 10 stops
     for (let i = 0; i < SECTION_LENGTH; i++) {
       s = typeAnswer(s, T0 + 1000 * (i + 1));
-      s = reducer(s, { type: 'DEPART', at: T0 + 1000 * (i + 1) + 500 });
-      if (i < SECTION_LENGTH - 1) {
-        expect(s.phase).toBe('moving');
-        s = reducer(s, { type: 'MOVE_DONE', at: T0 + 1000 * (i + 1) + 900 });
-      }
+      if (i < SECTION_LENGTH - 1) expect(s.phase).toBe('typing');
     }
     expect(s.phase).toBe('finished');
     expect(s.finishReason).toBe('completed');
@@ -311,8 +309,6 @@ describe('FINISHED', () => {
       { type: 'COUNTDOWN_DONE', at: T0 },
     );
     s = typeAnswer(s, T0 + 500);
-    s = reducer(s, { type: 'DEPART', at: T0 + 600 });
-    s = reducer(s, { type: 'MOVE_DONE', at: T0 + 1200 });
     const stopsBefore = s.stopsCompleted;
 
     s = reducer(s, { type: 'TICK', at: T0 + SPRINT_MS + 1 });
@@ -324,15 +320,18 @@ describe('FINISHED', () => {
     expect(reducer(s, { type: 'INPUT', value: 'x', at: T0 + SPRINT_MS + 100 }).input).toBe('');
   });
 
-  it('sprint: DEPART exactly at the deadline resolves as time-up', () => {
+  it('sprint: completing an answer at the deadline resolves as time-up', () => {
     let s = run(
       fresh(),
       { type: 'CONFIGURE', patch: { mode: 'sprint' } },
       { type: 'START', at: T0 - 3000 },
       { type: 'COUNTDOWN_DONE', at: T0 },
     );
-    s = typeAnswer(s, T0 + 500);
-    s = reducer(s, { type: 'DEPART', at: T0 + SPRINT_MS + 5 });
+    const answer = targetText(s);
+    for (let i = 1; i < answer.length; i++) {
+      s = reducer(s, { type: 'INPUT', value: answer.slice(0, i), at: T0 + 500 });
+    }
+    s = reducer(s, { type: 'INPUT', value: answer, at: T0 + SPRINT_MS + 5 });
     expect(s.phase).toBe('finished');
     expect(s.finishReason).toBe('time-up');
     expect(s.stopsCompleted).toBe(0);
@@ -359,14 +358,14 @@ describe('PAUSE / RESUME', () => {
     expect(elapsedMs(s)).toBe(2000);
   });
 
-  it('pausing mid-move settles the hop first', () => {
-    const s = run(
-      typeAnswer(startTyping(), T0 + 500),
-      { type: 'DEPART', at: T0 + 600 },
-      { type: 'PAUSE', at: T0 + 800 },
-    );
+  it('pausing after an instant stop advance preserves the new target', () => {
+    const advanced = typeAnswer(startTyping(), T0 + 500);
+    const nextChar = firstChar(advanced);
+    const partial = reducer(advanced, { type: 'INPUT', value: nextChar, at: T0 + 600 });
+    const s = reducer(partial, { type: 'PAUSE', at: T0 + 800 });
     expect(s.phase).toBe('paused');
     expect(s.stopIndex).toBe(1);
+    expect(s.input).toBe(nextChar);
     expect(s.pausedFrom).toBe('typing');
   });
 
@@ -381,8 +380,6 @@ describe('RESTART / EXIT', () => {
     const stopsCount = route.route.directions[0].stops.length;
     for (let i = 0; i < stopsCount; i++) {
       s = typeAnswer(s, T0 + 1000 * (i + 1));
-      s = reducer(s, { type: 'DEPART', at: T0 + 1000 * (i + 1) + 500 });
-      if (s.phase === 'moving') s = reducer(s, { type: 'MOVE_DONE', at: T0 + 1000 * (i + 1) + 900 });
     }
     return s;
   }

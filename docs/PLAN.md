@@ -103,7 +103,7 @@ PB 비교: full-route는 timeMs 최소, sprint는 stops 최대(동률 시 wpm).
 
 1. ✅ Phase 0 Foundation: repo, tokens, fixture, reducer + unit tests
 2. ✅ Phase 1 Playable slice: config → countdown → typing → bell → move → result
-3. ✅ Phase 2 Content+GTFS: `scripts/gtfs/` 파이프라인, 5개 노선(96·86·109·58·1) 양방향, 스키마 v2, 노선 선택 UI, Section(10 stops) 모드, 트램 추종 카메라(긴 노선 가독성), 트램 리버리 아이콘, 합성 사운드(키틱·도어·벨·트램패스), GitHub Pages 자동 배포
+3. ✅ Phase 2 Content+GTFS: `scripts/gtfs/` 파이프라인, 2026-07-10 공식 GTFS의 전체 24개 노선(정규 노선 양방향, Route 35 순환 단방향), 스키마 v2, 자동 route registry, 노선 선택 UI, Section(10 stops) 모드, 트램 추종 카메라(긴 노선 가독성), 트램 리버리 아이콘, 합성 사운드, GitHub Pages 자동 배포
 4. ⬜ Phase 3 Polish: 자체 호스팅 웹폰트(Public Sans/Inter 후보), 로고·파비콘, 결과 공유 이미지/링크, 커스텀 도메인, About/게임방법/개인정보 페이지
 5. ⬜ Phase 4 Accounts: Supabase 인증·프로필·리더보드, 서버측 점수 검증·rate limit·anti-cheat
 6. ⬜ Phase 5+ Growth/Realtime: daily route, 친구 대결, vehicle ghost (실시간 API)

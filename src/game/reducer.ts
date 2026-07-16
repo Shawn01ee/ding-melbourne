@@ -3,12 +3,14 @@ import { foldChar, isAnswerMatch } from './normalize';
 
 /**
  * Deterministic game state machine (PRD §6).
- * CONFIG -> COUNTDOWN -> TYPING -> READY -> MOVING -> TYPING ... -> FINISHED
- * PAUSED wraps any active phase. All timestamps arrive via actions,
+ * CONFIG -> COUNTDOWN -> TYPING ... -> FINISHED
+ * Completing a stop advances the logical game immediately; map motion is a
+ * renderer concern and never locks input. PAUSED wraps the live typing phase.
+ * All timestamps arrive via actions,
  * never Date.now() inside the reducer, so every transition is testable.
  */
 
-export type Phase = 'config' | 'countdown' | 'typing' | 'ready' | 'moving' | 'finished' | 'paused';
+export type Phase = 'config' | 'countdown' | 'typing' | 'finished' | 'paused';
 export type Mode = 'full-route' | 'section' | 'sprint';
 export type FinishReason = 'completed' | 'time-up';
 
@@ -34,7 +36,9 @@ export interface GameState {
   totalKeystrokes: number;
   correctKeystrokes: number;
   errors: number;
+  /** Consecutive accepted characters; crosses stop boundaries, breaks on a miss/backspace. */
   streak: number;
+  /** Highest character combo reached during this run. */
   bestStreak: number;
   /** True once any keystroke for the current stop was wrong. */
   stopHadError: boolean;
@@ -56,8 +60,6 @@ export type GameAction =
   | { type: 'START'; at: number }
   | { type: 'COUNTDOWN_DONE'; at: number }
   | { type: 'INPUT'; value: string; at: number }
-  | { type: 'DEPART'; at: number }
-  | { type: 'MOVE_DONE'; at: number }
   | { type: 'TICK'; at: number }
   | { type: 'PAUSE'; at: number }
   | { type: 'RESUME'; at: number }
@@ -132,7 +134,7 @@ function finish(state: GameState, reason: FinishReason, at: number): GameState {
 
 function timeUpIfDue(state: GameState, at: number): GameState | null {
   if (state.config.mode !== 'sprint') return null;
-  if (state.phase !== 'typing' && state.phase !== 'ready' && state.phase !== 'moving') return null;
+  if (state.phase !== 'typing') return null;
   if (activeElapsed(state, at) >= SPRINT_MS) return finish(state, 'time-up', at);
   return null;
 }
@@ -182,6 +184,17 @@ function advanceStop(state: GameState, at: number): GameState {
   };
 }
 
+/** Records a cleared stop and opens the next target without waiting on motion. */
+function completeStop(state: GameState, at: number): GameState {
+  const completed: GameState = {
+    ...state,
+    stopsCompleted: state.stopsCompleted + 1,
+    now: at,
+  };
+  if (state.stopIndex >= lastRunStopIndex(state)) return finish(completed, 'completed', at);
+  return advanceStop(completed, at);
+}
+
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'SELECT_ROUTE': {
@@ -221,7 +234,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'INPUT': {
-      if (state.phase !== 'typing' && state.phase !== 'ready') return state;
+      if (state.phase !== 'typing') return state;
       const dueBefore = timeUpIfDue(state, action.at);
       if (dueBefore) return dueBefore;
 
@@ -230,62 +243,58 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const prevChars = [...state.input];
       const nextChars = [...action.value];
 
-      let { totalKeystrokes, correctKeystrokes, errors, stopHadError } = state;
+      // Backspace/editing a correct prefix is allowed without rewriting history,
+      // but it breaks the live combo so characters cannot be farmed repeatedly.
+      if (
+        nextChars.length < prevChars.length &&
+        nextChars.every((char, index) => char === prevChars[index])
+      ) {
+        return { ...state, input: action.value, streak: 0, now: action.at };
+      }
+
+      const appendedToCurrent =
+        nextChars.length >= prevChars.length &&
+        prevChars.every((char, index) => char === nextChars[index]);
+      if (!appendedToCurrent) return state;
+
+      let { totalKeystrokes, correctKeystrokes, errors, stopHadError, streak, bestStreak } = state;
+      const acceptedChars = [...prevChars];
       if (nextChars.length > prevChars.length) {
         for (let i = prevChars.length; i < nextChars.length; i++) {
           totalKeystrokes += 1;
-          const expected = targetChars[i];
+          const expected = targetChars[acceptedChars.length];
           if (
             expected !== undefined &&
             foldChar(nextChars[i], state.config.difficulty) === foldChar(expected, state.config.difficulty)
           ) {
             correctKeystrokes += 1;
+            acceptedChars.push(nextChars[i]);
+            streak += 1;
+            bestStreak = Math.max(bestStreak, streak);
           } else {
             errors += 1;
             stopHadError = true;
+            streak = 0;
           }
         }
       }
-      // Backspace: length shrinks, counters intentionally keep the past (PRD §8).
 
-      const stop = state.route.stops[currentStopId(state)];
-      const complete = isAnswerMatch(action.value, stop.answers[state.config.difficulty], state.config.difficulty);
-      return {
+      // Wrong keys are deliberately not stored. The cursor stays on the same
+      // character, so the player can continue without reaching for Backspace.
+      const input = acceptedChars.join('');
+      const complete = isAnswerMatch(input, [target], state.config.difficulty);
+      const nextState: GameState = {
         ...state,
-        phase: complete ? 'ready' : 'typing',
-        input: action.value,
+        input,
         totalKeystrokes,
         correctKeystrokes,
         errors,
         stopHadError,
-        now: action.at,
-      };
-    }
-
-    case 'DEPART': {
-      if (state.phase !== 'ready') return state;
-      const dueBefore = timeUpIfDue(state, action.at);
-      if (dueBefore) return dueBefore;
-
-      const streak = state.stopHadError ? 0 : state.streak + 1;
-      const departed: GameState = {
-        ...state,
-        stopsCompleted: state.stopsCompleted + 1,
         streak,
-        bestStreak: Math.max(state.bestStreak, streak),
+        bestStreak,
         now: action.at,
       };
-      // Full Route ends at the terminus; Section ends after its stop cap.
-      const isLastStop = state.stopIndex >= lastRunStopIndex(state);
-      if (isLastStop) return finish(departed, 'completed', action.at);
-      return { ...departed, phase: 'moving', input: '' };
-    }
-
-    case 'MOVE_DONE': {
-      if (state.phase !== 'moving') return state;
-      const dueBefore = timeUpIfDue(state, action.at);
-      if (dueBefore) return dueBefore;
-      return advanceStop(state, action.at);
+      return complete ? completeStop(nextState, action.at) : nextState;
     }
 
     case 'TICK': {
@@ -296,13 +305,11 @@ export function reducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'PAUSE': {
-      if (state.phase !== 'typing' && state.phase !== 'ready' && state.phase !== 'moving') return state;
-      // Pausing mid-hop completes the hop first so resume lands on a stable stop.
-      const settled = state.phase === 'moving' ? advanceStop(state, action.at) : state;
+      if (state.phase !== 'typing') return state;
       return {
-        ...settled,
+        ...state,
         phase: 'paused',
-        pausedFrom: settled.phase,
+        pausedFrom: 'typing',
         pausedAt: action.at,
         now: action.at,
       };
@@ -322,13 +329,14 @@ export function reducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'INVALID_ACTION': {
-      if (state.phase !== 'typing' && state.phase !== 'ready') return state;
+      if (state.phase !== 'typing') return state;
       // e.g. paste attempt: one invalid keystroke (PRD §8).
       return {
         ...state,
         totalKeystrokes: state.totalKeystrokes + 1,
         errors: state.errors + 1,
         stopHadError: true,
+        streak: 0,
       };
     }
 

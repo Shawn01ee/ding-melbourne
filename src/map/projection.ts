@@ -12,14 +12,16 @@ export interface ProjectedPath {
   pointsUpTo(p: number): { x: number; y: number }[];
 }
 
-export function projectPath(
+/** Project any shape through the geographic frame established by a reference shape. */
+export function projectCoordinates(
   shape: [number, number][],
+  referenceShape: [number, number][],
   width: number,
   height: number,
   padding: number,
-): ProjectedPath {
-  const lats = shape.map(([, lat]) => lat);
-  const lons = shape.map(([lon]) => lon);
+): { x: number; y: number }[] {
+  const lats = referenceShape.map(([, lat]) => lat);
+  const lons = referenceShape.map(([lon]) => lon);
   const minLat = Math.min(...lats);
   const maxLat = Math.max(...lats);
   const minLon = Math.min(...lons);
@@ -33,10 +35,19 @@ export function projectPath(
   const offsetX = (width - spanX * scale) / 2;
   const offsetY = (height - spanY * scale) / 2;
 
-  const points = shape.map(([lon, lat]) => ({
+  return shape.map(([lon, lat]) => ({
     x: offsetX + (lon - minLon) * kx * scale,
     y: offsetY + (maxLat - lat) * scale,
   }));
+}
+
+export function projectPath(
+  shape: [number, number][],
+  width: number,
+  height: number,
+  padding: number,
+): ProjectedPath {
+  const points = projectCoordinates(shape, shape, width, height, padding);
 
   const segmentLengths: number[] = [];
   let total = 0;

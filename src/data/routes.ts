@@ -1,18 +1,16 @@
 import type { RouteData } from './types';
 import { validateRouteData } from './validate';
-import route1 from './generated/route-1.json';
-import route58 from './generated/route-58.json';
-import route86 from './generated/route-86.json';
-import route96 from './generated/route-96.json';
-import route109 from './generated/route-109.json';
 
 /**
- * Registry of playable routes. Each generated JSON is validated once at module
- * load; invalid routes are dropped (with a console warning) rather than
+ * Every generated route is discovered automatically and validated once at
+ * module load. Invalid routes are dropped (with a console warning) rather than
  * crashing the whole app, and the picker simply won't offer them.
- * Display order here is the order shown in the route picker.
  */
-const RAW: unknown[] = [route96, route86, route109, route58, route1];
+const generatedModules = import.meta.glob('./generated/route-*.json', {
+  eager: true,
+  import: 'default',
+});
+const RAW: unknown[] = Object.values(generatedModules);
 
 export interface AvailableRoute {
   data: RouteData;
@@ -24,7 +22,7 @@ function buildRegistry(): AvailableRoute[] {
   for (const raw of RAW) {
     const result = validateRouteData(raw);
     if (result.ok) {
-      const totalStops = result.data.route.directions[0].stops.length;
+      const totalStops = Math.max(...result.data.route.directions.map((direction) => direction.stops.length));
       out.push({ data: result.data, totalStops });
     } else {
       const id = (raw as RouteData)?.route?.id ?? 'unknown';
@@ -32,6 +30,12 @@ function buildRegistry(): AvailableRoute[] {
       console.warn(`Route "${id}" failed validation and was skipped:`, result.problems);
     }
   }
+  out.sort((a, b) => {
+    if (a.data.route.shortName === '96') return -1;
+    if (b.data.route.shortName === '96') return 1;
+    return Number(a.data.route.shortName) - Number(b.data.route.shortName)
+      || a.data.route.shortName.localeCompare(b.data.route.shortName);
+  });
   return out;
 }
 

@@ -17,13 +17,14 @@ time only — the browser never downloads or parses the ~268 MB GTFS zip.
    unzip gtfs-extract/3/google_transit.zip -d tram
    ```
 
-3. Generate (routes are matched by `route_short_name`):
+3. Generate every currently published metropolitan tram route (matched by
+   `route_short_name`):
 
    ```bash
    node scripts/gtfs/build-routes.mjs \
      --gtfs /path/to/tram \
      --out src/data/generated \
-     --routes 96,86,109,58,1 \
+     --routes all \
      --updated 2026-07-10
    ```
 
@@ -39,8 +40,13 @@ attribution date shown in the app.
 - Subsamples each shape to ≤300 points and trims it to the played span.
 - Parses `Name/Road #num` stop labels into easy / standard / driver answers.
 
-## Adding a route
+`--routes all` removes stale `route-*.json` files from the output directory
+before writing the current official set. Pass a comma-separated list instead
+when intentionally generating only a subset.
 
-Add its short name to `--routes`, regenerate, then register the new
-`route-<n>.json` in `src/data/routes.ts`. Validation runs at load; a malformed
-route is skipped with a console warning rather than crashing the app.
+## Route registry
+
+`src/data/routes.ts` discovers generated `route-*.json` files automatically.
+Validation runs at load; a malformed route is skipped with a console warning
+rather than crashing the app. Circular services such as Route 35 may publish
+one direction; all other current routes publish both directions.

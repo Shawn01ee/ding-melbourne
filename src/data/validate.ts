@@ -25,8 +25,8 @@ export function validateRouteData(raw: unknown): ValidationResult {
   }
 
   const dirs = data.route.directions;
-  if (!Array.isArray(dirs) || dirs.length < 2) {
-    problems.push('route needs at least 2 directions');
+  if (!Array.isArray(dirs) || dirs.length < 1) {
+    problems.push('route needs at least 1 direction');
   } else {
     for (const dir of dirs) {
       if (!Array.isArray(dir.stops) || dir.stops.length < 2) {

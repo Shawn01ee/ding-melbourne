@@ -1,10 +1,12 @@
+import { useEffect, useRef, type CSSProperties } from 'react';
+import { primeAudio } from '../audio/bell';
 import type { AvailableRoute } from '../data/routes';
 import type { RouteData } from '../data/types';
 import type { GameAction, GameState, Mode } from '../game/reducer';
 import { directionIndexOf, SECTION_LENGTH } from '../game/reducer';
 import { stopShortName } from '../game/selectors';
 import { saveLastConfig, saveLastRouteId, saveSettings } from '../storage/local';
-import { BRAND, TAGLINE } from '../brand';
+import { BRAND, TAGLINE, inkForBackground } from '../brand';
 
 interface ConfigScreenProps {
   routes: AvailableRoute[];
@@ -21,11 +23,19 @@ const MODES: [Mode, string, string][] = [
 
 export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenProps) {
   const { config } = state;
+  const selectedRouteRef = useRef<HTMLButtonElement>(null);
   const direction = route.route.directions[directionIndexOf(state)];
   // Any stop except the terminus can be a start (a run needs ≥1 hop).
   const startableStops = direction.stops.slice(0, -1);
 
+  useEffect(() => {
+    selectedRouteRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [route.route.id]);
+
   const start = () => {
+    // Prime Web Audio while this trusted click is active. Later typing cues
+    // can then respond immediately even under strict autoplay policies.
+    primeAudio(config.soundOn);
     saveLastRouteId(route.route.id);
     saveLastConfig(config);
     saveSettings({ soundOn: config.soundOn, difficulty: config.difficulty });
@@ -40,22 +50,69 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
   const endStop = route.stops[direction.stops[runEndIndex]];
 
   return (
-    <main className="screen config-screen">
+    <main
+      className="screen config-screen"
+      style={{ '--route-color': route.route.color } as CSSProperties}
+    >
+      <svg
+        className="config-network"
+        viewBox="0 0 1440 900"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+      >
+        <path d="M-80 730 L245 585 L455 610 L735 430 L1060 485 L1510 245" />
+        <path d="M-40 210 L315 185 L565 325 L800 250 L1010 80 L1490 155" />
+        <path d="M120 -50 L255 245 L190 470 L395 730 L420 960" />
+        <path d="M1040 -70 L980 225 L1110 520 L1025 950" />
+        <path d="M-70 470 L280 305 L620 315 L910 590 L1450 690" />
+      </svg>
+
       <header className="config-hero">
-        <p className="brand">{BRAND}</p>
+        <p className="config-kicker">Melbourne tram typing game</p>
+        <p className="brand config-brand">{BRAND}</p>
         <h1>{TAGLINE}</h1>
-        <p className="sub">Pick a route. Type every stop. Ring the bell.</p>
+        <p className="sub">Pick a line, learn the stops, and drive it one perfect word at a time.</p>
+
+        <div className="journey-preview" aria-label="Selected journey">
+          <span
+            className="journey-route"
+            style={{
+              background: route.route.color,
+              color: inkForBackground(route.route.color),
+            }}
+          >
+            {route.route.shortName}
+          </span>
+          <span className="journey-preview-stop">
+            <small>BOARD AT</small>
+            <strong>{stopShortName(startStop)}</strong>
+          </span>
+          <span className="journey-preview-line" aria-hidden="true">
+            <i />
+          </span>
+          <span className="journey-preview-stop journey-preview-stop-end">
+            <small>{config.mode === 'sprint' ? 'GO FOR' : 'BOUND FOR'}</small>
+            <strong>{config.mode === 'sprint' ? '60 seconds' : stopShortName(endStop)}</strong>
+          </span>
+        </div>
+
+        <p className="config-instruction">
+          <kbd>TYPE</kbd> the stop · wrong keys do not stick · every clear rings the bell
+        </p>
       </header>
 
       <section className="config-card" aria-label="Game setup">
         <fieldset>
-          <legend>Route</legend>
+          <legend>
+            Route <span className="route-count">{routes.length} lines</span>
+          </legend>
           <div className="route-grid" role="radiogroup" aria-label="Route">
             {routes.map(({ data, totalStops }) => {
               const selected = data.route.id === route.route.id;
               return (
                 <button
                   key={data.route.id}
+                  ref={selected ? selectedRouteRef : undefined}
                   type="button"
                   role="radio"
                   aria-checked={selected}
@@ -63,7 +120,13 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
                   style={selected ? { borderColor: data.route.color } : undefined}
                   onClick={() => dispatch({ type: 'SELECT_ROUTE', route: data })}
                 >
-                  <span className="route-badge" style={{ background: data.route.color }}>
+                  <span
+                    className="route-badge"
+                    style={{
+                      background: data.route.color,
+                      color: inkForBackground(data.route.color),
+                    }}
+                  >
                     {data.route.shortName}
                   </span>
                   <span className="route-chip-text">
@@ -132,62 +195,49 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend>Difficulty</legend>
-          <div className="option-row" role="radiogroup" aria-label="Difficulty">
-            {(
-              [
-                ['easy', 'Easy'],
-                ['standard', 'Standard'],
-                ['driver', 'Driver'],
-              ] as const
-            ).map(([difficulty, label]) => (
-              <button
-                key={difficulty}
-                type="button"
-                role="radio"
-                aria-checked={config.difficulty === difficulty}
-                className={config.difficulty === difficulty ? 'option selected' : 'option'}
-                onClick={() => dispatch({ type: 'CONFIGURE', patch: { difficulty } })}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <div className="config-field-row">
+          <fieldset>
+            <legend>Difficulty</legend>
+            <div className="option-row" role="radiogroup" aria-label="Difficulty">
+              {(
+                [
+                  ['easy', 'Easy'],
+                  ['standard', 'Standard'],
+                  ['driver', 'Driver'],
+                ] as const
+              ).map(([difficulty, label]) => (
+                <button
+                  key={difficulty}
+                  type="button"
+                  role="radio"
+                  aria-checked={config.difficulty === difficulty}
+                  className={config.difficulty === difficulty ? 'option selected' : 'option'}
+                  onClick={() => dispatch({ type: 'CONFIGURE', patch: { difficulty } })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
-        <fieldset>
-          <legend>Sound</legend>
-          <button
-            type="button"
-            className="option"
-            aria-pressed={config.soundOn}
-            onClick={() => dispatch({ type: 'CONFIGURE', patch: { soundOn: !config.soundOn } })}
-          >
-            {config.soundOn ? '🔔 Bell on' : '🔕 Bell off'}
-          </button>
-        </fieldset>
-
-        <div className="journey-row" aria-label="Selected journey">
-          <span className="journey-end">
-            {startStop.stopNumber && <span className="roundel roundel-dark">#{startStop.stopNumber}</span>}
-            {stopShortName(startStop)}
-          </span>
-          <span className="journey-arrow" style={{ color: route.route.color }}>
-            {config.mode === 'sprint' ? '∞' : '⟶'}
-          </span>
-          <span className="journey-end">
-            {config.mode === 'sprint' ? 'as far as you get' : stopShortName(endStop)}
-            {config.mode !== 'sprint' && endStop.stopNumber && (
-              <span className="roundel roundel-dark">#{endStop.stopNumber}</span>
-            )}
-          </span>
+          <fieldset className="sound-field">
+            <legend>Sound</legend>
+            <button
+              type="button"
+              className="option sound-option"
+              aria-pressed={config.soundOn}
+              onClick={() => dispatch({ type: 'CONFIGURE', patch: { soundOn: !config.soundOn } })}
+            >
+              {config.soundOn ? '🔔 Bell on' : '🔕 Bell off'}
+            </button>
+          </fieldset>
         </div>
 
         <button type="button" className="start-button" onClick={start}>
-          RING TO START
+          <span>RING TO START</span>
+          <span aria-hidden="true">→</span>
         </button>
-        <p className="start-hint">Type each stop name, then Enter or Space rings the bell</p>
+        <p className="start-hint">Route {route.route.shortName} · {direction.headsign} · {startableStops.length + 1} stops</p>
       </section>
 
       <footer className="config-footer">

@@ -16,12 +16,18 @@ describe('validateRouteData', () => {
     expect(validateRouteData('nope').ok).toBe(false);
   });
 
-  it('rejects fewer than 2 directions', () => {
+  it('accepts a one-direction circular route', () => {
+    const circular = clone();
+    circular.route.directions = [circular.route.directions[0]];
+    expect(validateRouteData(circular).ok).toBe(true);
+  });
+
+  it('rejects a route with no directions', () => {
     const bad = clone();
-    bad.route.directions = [bad.route.directions[0]];
+    bad.route.directions = [];
     const result = validateRouteData(bad);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.problems.join(' ')).toMatch(/2 directions/);
+    if (!result.ok) expect(result.problems.join(' ')).toMatch(/1 direction/);
   });
 
   it('rejects direction references to unknown stops', () => {

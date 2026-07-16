@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RouteData } from '../data/types';
 import { stopProgress } from '../data/types';
-import type { GameAction, Phase } from '../game/reducer';
-import { projectPath } from './projection';
+import { projectCoordinates, projectPath } from './projection';
 
 const VIEW_W = 1000;
 const VIEW_H = 640;
 const PADDING = 70;
-const MOVE_MS = 500;
-const REDUCED_MOVE_MS = 180;
+const FOLLOW_MS = 180;
 
 // Following-camera tuning: aim to keep roughly this many stops across the
 // viewport so long routes (70+ stops) stay legible instead of collapsing.
@@ -19,10 +17,12 @@ const LABEL_RADIUS = 1; // name only the immediate previous/next stop; others ar
 
 interface RouteCanvasProps {
   route: RouteData;
+  networkRoutes?: RouteData[];
   directionIndex: number;
   stopIndex: number;
-  phase: Phase;
-  dispatch: (action: GameAction) => void;
+  startStopIndex: number;
+  /** Accepted-character progress toward the current stop, from 0 to 1. */
+  typedProgress: number;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -45,11 +45,47 @@ function median(values: number[]): number {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch }: RouteCanvasProps) {
+/** Keep the live stop label on the lower normal of the rail, not on the rail itself. */
+function currentLabelOffset(angleDeg: number): { x: number; y: number } {
+  const angle = (angleDeg * Math.PI) / 180;
+  let x = -Math.sin(angle) * 58;
+  let y = Math.cos(angle) * 58;
+  if (y < 0) {
+    x *= -1;
+    y *= -1;
+  }
+  return { x, y: Math.max(34, y) };
+}
+
+export function RouteCanvas({
+  route,
+  networkRoutes = [],
+  directionIndex,
+  stopIndex,
+  startStopIndex,
+  typedProgress,
+}: RouteCanvasProps) {
   const direction = route.route.directions[directionIndex];
   const reducedMotion = usePrefersReducedMotion();
+  const activeStop = route.stops[direction.stops[stopIndex]];
+  const activeName = activeStop.landmark ?? activeStop.displayName.split('/')[0];
 
   const path = useMemo(() => projectPath(direction.shape, VIEW_W, VIEW_H, PADDING), [direction]);
+  const ghostPaths = useMemo(
+    () =>
+      networkRoutes
+        .filter((candidate) => candidate.route.id !== route.route.id)
+        .map((candidate) =>
+          projectCoordinates(
+            candidate.route.directions[0].shape,
+            direction.shape,
+            VIEW_W,
+            VIEW_H,
+            PADDING,
+          ),
+        ),
+    [direction, networkRoutes, route.route.id],
+  );
 
   // Projected world points for every stop, plus a stable zoom derived from
   // the median gap between consecutive stops (so ~TARGET_STOPS_ACROSS fit).
@@ -66,55 +102,105 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
   }, [direction, path, route]);
 
   const progressOf = (index: number) => stopProgress(route, direction.stops[index]);
-  const [tramProgress, setTramProgress] = useState(progressOf(stopIndex));
+  // The first prompt is typed at the boarding stop. From then on, accepted
+  // characters physically pull the tram from the previous stop to the current
+  // target. Wrong keys leave this value unchanged and never block the input.
+  const fromIndex = Math.max(startStopIndex, stopIndex - 1);
+  const fromProgress = progressOf(fromIndex);
+  const toProgress = progressOf(stopIndex);
+  const desiredProgress =
+    stopIndex === startStopIndex
+      ? toProgress
+      : fromProgress + (toProgress - fromProgress) * Math.min(1, Math.max(0, typedProgress));
+
+  const [tramProgress, setTramProgress] = useState(desiredProgress);
+  const tramProgressRef = useRef(desiredProgress);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    if (phase !== 'moving') {
-      setTramProgress(progressOf(stopIndex));
+    cancelAnimationFrame(rafRef.current);
+    const from = tramProgressRef.current;
+    const to = desiredProgress;
+    if (reducedMotion || Math.abs(to - from) < 0.000001) {
+      tramProgressRef.current = to;
+      setTramProgress(to);
       return;
     }
-    const from = progressOf(stopIndex);
-    const to = progressOf(Math.min(stopIndex + 1, direction.stops.length - 1));
-    const duration = reducedMotion ? REDUCED_MOVE_MS : MOVE_MS;
     const t0 = performance.now();
     const step = (t: number) => {
-      const k = Math.min(1, (t - t0) / duration);
-      const eased = reducedMotion ? (k < 1 ? 0 : 1) : 1 - Math.pow(1 - k, 3);
-      setTramProgress(from + (to - from) * eased);
+      const k = Math.min(1, (t - t0) / FOLLOW_MS);
+      const eased = 1 - Math.pow(1 - k, 3);
+      const value = from + (to - from) * eased;
+      tramProgressRef.current = value;
+      setTramProgress(value);
       if (k < 1) {
         rafRef.current = requestAnimationFrame(step);
-      } else {
-        dispatch({ type: 'MOVE_DONE', at: Date.now() });
       }
     };
     rafRef.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, stopIndex, directionIndex, reducedMotion]);
+  }, [desiredProgress, reducedMotion]);
 
   const tram = path.pointAt(tramProgress);
+  const labelOffset = currentLabelOffset(tram.angleDeg);
   const completed = path.pointsUpTo(tramProgress);
   const color = route.route.color;
 
-  // Follow camera: scale world by `zoom`, translate so the tram sits at centre.
+  // Follow camera: scale world by `zoom`, translate so the tram sits slightly
+  // above centre, leaving breathing room for the overlaid driving console.
   // Inverse factor k keeps dot/label/tram sizes constant on screen at any zoom.
   const s = zoom;
   const k = 1 / s;
   const tx = VIEW_W / 2 - s * tram.x;
-  const ty = VIEW_H / 2 - s * tram.y;
+  const ty = VIEW_H * 0.43 - s * tram.y;
 
   const toPolyline = (pts: { x: number; y: number }[]) =>
     pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
   return (
     <svg
-      className={`route-canvas${reducedMotion && phase === 'moving' ? ' crossfading' : ''}`}
+      className="route-canvas"
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+      preserveAspectRatio="xMidYMid slice"
       role="img"
       aria-label={`Route ${route.route.shortName} map, tram heading to ${direction.headsign}`}
     >
+      <defs>
+        <pattern id="map-grid" width="38" height="38" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="1" className="map-grid-dot" />
+        </pattern>
+        <filter id="tram-shadow" x="-70%" y="-100%" width="240%" height="300%">
+          <feDropShadow dx="0" dy="7" stdDeviation="6" floodColor="#17211d" floodOpacity="0.22" />
+        </filter>
+      </defs>
+
+      <rect className="map-backdrop" width={VIEW_W} height={VIEW_H} />
+      <rect className="map-grid" width={VIEW_W} height={VIEW_H} fill="url(#map-grid)" />
+      <text className="map-side-caption" x="28" y="350" transform="rotate(-90 28 350)" aria-hidden="true">
+        DING! MELBOURNE · ROUTE {route.route.shortName} · {direction.headsign}
+      </text>
+      <text
+        className="map-watermark"
+        x={VIEW_W / 2}
+        y={165}
+        textAnchor="middle"
+        textLength={activeName.length > 18 ? 780 : undefined}
+        lengthAdjust={activeName.length > 18 ? 'spacingAndGlyphs' : undefined}
+        aria-hidden="true"
+      >
+        {activeName}
+      </text>
+
       <g transform={`translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${s.toFixed(4)})`}>
+        <g className="ghost-network" aria-hidden="true">
+          {ghostPaths.map((points, index) => (
+            <polyline
+              key={index}
+              points={toPolyline(points)}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
         <polyline
           className="rail rail-casing"
           points={toPolyline(path.points)}
@@ -151,7 +237,8 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
 
         <g
           className="tram"
-          transform={`translate(${tram.x} ${tram.y}) scale(${k.toFixed(4)}) rotate(${tram.angleDeg})`}
+          filter="url(#tram-shadow)"
+          transform={`translate(${tram.x} ${tram.y}) scale(${(k * 1.28).toFixed(4)}) rotate(${tram.angleDeg})`}
         >
           <rect x={-30} y={-14} width={60} height={28} rx={11} fill="#FFFFFF" />
           {/* Melbourne-livery-inspired (not a replica): off-white body,
@@ -176,24 +263,38 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
           <line x1={-11} y1={-17} x2={3} y2={-17} stroke="#17211D" strokeWidth={2} />
         </g>
 
-        {/* Labels pass: only the immediate previous/next stop, drawn ON TOP of
-            the tram so a nearby label is never covered. The current stop's name
-            lives in the console, so the map omits it. */}
+        <g
+          className="current-map-label"
+          transform={`translate(${tram.x} ${tram.y}) scale(${k.toFixed(4)})`}
+          aria-hidden="true"
+        >
+          <text x={labelOffset.x} y={labelOffset.y} textAnchor="middle">{activeName}</text>
+          {activeStop.stopNumber && (
+            <text
+              className="current-map-number"
+              x={labelOffset.x}
+              y={labelOffset.y + 18}
+              textAnchor="middle"
+            >
+              #{activeStop.stopNumber}
+            </text>
+          )}
+        </g>
+
+        {/* Labels pass: keep only the next stop visible. The current stop has a
+            dedicated label under the tram; including the previous label here
+            causes collisions on tightly spaced CBD/platform stops. */}
         {direction.stops.map((stopId, i) => {
-          if (i === stopIndex || Math.abs(i - stopIndex) > LABEL_RADIUS) return null;
+          if (i <= stopIndex || i - stopIndex > LABEL_RADIUS) return null;
           const p = stopPoints[i];
           const stop = route.stops[stopId];
-          const status = i < stopIndex ? 'past' : 'future';
-          const labelLeft = i % 2 === 0;
-          const offset = 15 * k;
-          const labelX = labelLeft ? p.x - offset : p.x + offset;
-          const anchor = labelLeft ? 'end' : 'start';
+          const status = 'future';
           return (
             <g key={stopId} className={`stop stop-${status}`}>
               <text
-                x={labelX}
-                y={p.y + 2 * k}
-                textAnchor={anchor}
+                x={p.x}
+                y={p.y - 18 * k}
+                textAnchor="middle"
                 style={{ fontSize: `${15 * k}px` }}
                 vectorEffect="non-scaling-stroke"
               >
@@ -202,9 +303,9 @@ export function RouteCanvas({ route, directionIndex, stopIndex, phase, dispatch 
               {stop.stopNumber && (
                 <text
                   className="stop-num"
-                  x={labelX}
-                  y={p.y + 16 * k}
-                  textAnchor={anchor}
+                  x={p.x}
+                  y={p.y - 5 * k}
+                  textAnchor="middle"
                   style={{ fontSize: `${11 * k}px` }}
                 >
                   #{stop.stopNumber}
