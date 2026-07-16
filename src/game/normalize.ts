@@ -7,7 +7,7 @@ import type { Difficulty } from '../data/types';
  */
 
 const CURLY_APOSTROPHES = /[‘’ʼ]/g;
-/** Punctuation treated as optional on easy/standard. */
+/** Punctuation treated as optional on Standard; Driver types the full label exactly. */
 const OPTIONAL_PUNCTUATION = /[/#'.,\-()&]/g;
 
 /** NFKC -> trim -> lowercase -> collapse whitespace. Applied at every difficulty. */

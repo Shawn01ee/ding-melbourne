@@ -1,14 +1,16 @@
 # DING! MELBOURNE — Melbourne Tram Typing Game
 
-**Play it here: https://shawn01ee.github.io/ding-melbourne/**
+**Play it here: https://ding-melbourne.vercel.app/**
+
+GitHub Pages mirror: https://shawn01ee.github.io/ding-melbourne/
 
 Type each tram stop name and watch every correct character drive the tram along
 the map; completing a stop opens the next target immediately. The game includes
 all 24 metropolitan tram routes in the 10 July 2026 Transport Victoria GTFS
 Schedule (both directions where published; Route 35 City Circle is circular).
-Modes: Full Route, 10-Stop Section, 60-second Sprint. Three difficulties,
-responsive synthesized tram sounds, a follow-camera for long lines, local
-personal bests, no backend.
+Modes: Full Route, 10-Stop Section, 60-second Sprint. Standard and Driver
+difficulties, responsive synthesized tram sounds, a follow-camera for long
+lines, local personal bests, no backend.
 
 ## Run
 

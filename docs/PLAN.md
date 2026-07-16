@@ -12,7 +12,7 @@ PRD §18이 요구하는 "코딩 전 산출물"을 저장소에 고정한 문서
 - 사운드는 자체 Web Audio 합성(외부 음원 없음, PRD §12 originality).
 - UI 언어는 영어(한국어 번역은 Phase 4 SHOULD).
 - 브랜드는 `src/brand.ts` 상수로 격리 (최종명 미정, PRD §4).
-- Driver 난이도도 대소문자는 무시하되 구두점·stop number는 요구 (아래 미해결 결정 참조).
+- 플레이 난이도는 Standard(짧은 정류장명)와 Driver(전체 교차로명) 두 단계. Driver도 대소문자는 무시하되 구두점은 요구한다.
 
 ## 2. File tree
 
@@ -58,7 +58,8 @@ tests/
 - `schemaVersion`, `sourceUpdatedAt`, `route{id, shortName, longName, color, directions[]}`,
   `stops{...}`.
 - `directions[i].shape`: 해당 방향 주행 순서의 `[lon, lat]` polyline.
-- `stops[id].answers.{easy,standard,driver}`: 난이도별 허용 답 배열, `[0]`이 화면 표시 target.
+- `stops[id].answers.{easy,standard,driver}`: 기존 GTFS 답안 tier. 화면에서는 Easy tier를 Standard에,
+  Standard tier를 Driver에 연결하며 stop number가 포함된 기존 Driver tier는 사용하지 않는다.
 - `position.progress`: **directions[0] 기준** 호길이 비율(0..1). 반대 방향은 `1 - p`
   (`stopProgress()` 헬퍼로만 접근).
 - 검증 규칙: 방향 ≥2, 방향당 stop ≥2, stop id 존재, progress 방향별 단조 증가,
@@ -113,7 +114,7 @@ PB 비교: full-route는 timeMs 최소, sprint는 stops 최대(동률 시 wpm).
 1. **최종 브랜드명** — DING! Melbourne / TRAM TYPE / NEXT STOP 중 선택 (현재 작업명 상수).
 2. **리더보드 포함 여부** — MVP는 로컬 PB만.
 3. **Driver 난이도 대소문자** — 현재 대소문자 무시·구두점 필수. 완전 엄격 모드로 바꿀지.
-4. **글자 피드백 vs 정규화 관용의 간극** — 구두점을 통째로 생략 입력하면 최종 매칭은 통과하나
-   위치 기반 글자 피드백은 이후 글자를 오타로 표시. Easy alias로 흡수 중. 허용할지 결정.
+4. **GTFS 답안 키 정리** — 다음 데이터 재생성 때 내부 `easy/standard/driver` 키를
+   플레이어용 `standard/driver` 두 tier로 마이그레이션할지.
 5. **재시작 카운트다운** — fast-reset을 위해 1비트(0.5s)로 축소함. 3-2-1 유지 여부.
 6. **Sprint에서 노선 소진 시** — 현재 종점 도달하면 completed로 종료. 반대 방향 이어달리기 여부.

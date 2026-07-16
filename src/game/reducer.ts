@@ -115,7 +115,10 @@ export function currentStopId(state: GameState): string {
 
 export function targetText(state: GameState): string {
   const stop = state.route.stops[currentStopId(state)];
-  return stop.answers[state.config.difficulty][0];
+  // Keep the generated GTFS answer tiers backwards-compatible while exposing
+  // two clear player-facing levels: short stop name or full intersection.
+  const answerTier = state.config.difficulty === 'standard' ? 'easy' : 'standard';
+  return stop.answers[answerTier][0];
 }
 
 function activeElapsed(state: GameState, at: number): number {

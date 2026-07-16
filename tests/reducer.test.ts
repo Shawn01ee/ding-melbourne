@@ -56,9 +56,14 @@ describe('CONFIG', () => {
   it('starts in config and applies patches', () => {
     const s = fresh();
     expect(s.phase).toBe('config');
-    const s2 = reducer(s, { type: 'CONFIGURE', patch: { mode: 'sprint', difficulty: 'easy' } });
+    const s2 = reducer(s, { type: 'CONFIGURE', patch: { mode: 'sprint', difficulty: 'driver' } });
     expect(s2.config.mode).toBe('sprint');
-    expect(s2.config.difficulty).toBe('easy');
+    expect(s2.config.difficulty).toBe('driver');
+  });
+
+  it('uses the short stop name for Standard and the full intersection for Driver', () => {
+    expect(targetText(fresh({ difficulty: 'standard' }))).toBe('Stop A');
+    expect(targetText(fresh({ difficulty: 'driver' }))).toBe('Stop A/Test St');
   });
 
   it('resets startStopIndex when direction changes', () => {

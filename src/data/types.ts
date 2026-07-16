@@ -44,7 +44,8 @@ export interface StopData {
   position: { lat: number; lon: number; progress: number };
 }
 
-export type Difficulty = 'easy' | 'standard' | 'driver';
+/** Player-facing difficulty. Standard uses the short stop name; Driver uses the full intersection name. */
+export type Difficulty = 'standard' | 'driver';
 
 /** Progress of a stop along its own direction's rendered path. */
 export function stopProgress(route: RouteData, stopId: string): number {

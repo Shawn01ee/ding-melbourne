@@ -38,15 +38,6 @@ describe('isAnswerMatch — standard', () => {
   });
 });
 
-describe('isAnswerMatch — easy', () => {
-  it('matches any curated alias', () => {
-    const aliases = ['Southern Cross', 'Southern Cross Station'];
-    expect(isAnswerMatch('southern cross', aliases, 'easy')).toBe(true);
-    expect(isAnswerMatch('Southern Cross Station', aliases, 'easy')).toBe(true);
-    expect(isAnswerMatch('southern', aliases, 'easy')).toBe(false);
-  });
-});
-
 describe('isAnswerMatch — driver', () => {
   const answers = ['St Kilda Station/Fitzroy St #132'];
 

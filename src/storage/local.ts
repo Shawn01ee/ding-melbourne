@@ -47,7 +47,13 @@ function write(key: string, value: unknown): void {
 }
 
 export function loadSettings(): StoredSettings | null {
-  return read<StoredSettings>(KEY_SETTINGS);
+  const stored = read<Record<string, unknown>>(KEY_SETTINGS);
+  if (!stored || typeof stored.soundOn !== 'boolean') return null;
+  return {
+    soundOn: stored.soundOn,
+    // Easy was folded into Standard in the two-level difficulty model.
+    difficulty: stored.difficulty === 'driver' ? 'driver' : 'standard',
+  };
 }
 
 export function saveSettings(settings: StoredSettings): void {
@@ -55,7 +61,13 @@ export function saveSettings(settings: StoredSettings): void {
 }
 
 export function loadLastConfig(): Partial<GameConfig> | null {
-  return read<Partial<GameConfig>>(KEY_LAST_CONFIG);
+  const stored = read<Record<string, unknown>>(KEY_LAST_CONFIG);
+  if (!stored) return null;
+  const { difficulty, ...rest } = stored;
+  const config = rest as Partial<GameConfig>;
+  if (difficulty === 'easy' || difficulty === 'standard') return { ...config, difficulty: 'standard' };
+  if (difficulty === 'driver') return { ...config, difficulty: 'driver' };
+  return config;
 }
 
 export function saveLastConfig(config: GameConfig): void {

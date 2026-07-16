@@ -201,7 +201,6 @@ export function ConfigScreen({ routes, route, state, dispatch }: ConfigScreenPro
             <div className="option-row" role="radiogroup" aria-label="Difficulty">
               {(
                 [
-                  ['easy', 'Easy'],
                   ['standard', 'Standard'],
                   ['driver', 'Driver'],
                 ] as const
