@@ -11,7 +11,7 @@ import type { RouteData } from '../data/types';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
 import { RouteCanvas } from '../map/RouteCanvas';
 import { loadLastConfig, loadSettings, loadTheme, saveTheme } from '../storage/local';
-import { appViewport, type AppViewport } from './visualViewport';
+import { appViewport, stableKeyboardHeight, type AppViewport } from './visualViewport';
 
 export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initialRoute: RouteData }) {
   const [theme, setTheme] = useState(loadTheme);
@@ -33,6 +33,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
   const baselineViewportHeightRef = useRef(
     window.visualViewport?.height ?? window.innerHeight,
   );
+  const keyboardSessionHeightRef = useRef<number | null>(null);
   const [viewport, setViewport] = useState<AppViewport>(() => {
     const visual = window.visualViewport;
     return appViewport(
@@ -80,13 +81,20 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
           height + offsetTop,
         );
       }
-      const next = appViewport(
+      const measured = appViewport(
         baselineViewportHeightRef.current,
         height,
         width,
         offsetTop,
         focused,
       );
+      keyboardSessionHeightRef.current = stableKeyboardHeight(
+        keyboardSessionHeightRef.current,
+        measured,
+      );
+      const next = keyboardSessionHeightRef.current === null
+        ? measured
+        : { ...measured, height: keyboardSessionHeightRef.current };
       root.style.setProperty('--visual-viewport-height', `${next.height}px`);
       root.style.setProperty('--visual-viewport-width', `${next.width}px`);
       root.style.setProperty('--visual-viewport-offset-top', `${next.offsetTop}px`);

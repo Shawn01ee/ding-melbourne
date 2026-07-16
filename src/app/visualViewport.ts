@@ -32,3 +32,16 @@ export function appViewport(
     keyboardOpen: typingInputFocused && inset >= KEYBOARD_OPEN_THRESHOLD,
   };
 }
+
+/**
+ * iOS can add/remove its QuickType or AutoFill row while an input stays
+ * focused. Keep the smallest keyboard-open height for that focus session so
+ * the cockpit does not bounce at every stop. Reset when the keyboard closes.
+ */
+export function stableKeyboardHeight(
+  currentHeight: number | null,
+  viewport: AppViewport,
+): number | null {
+  if (!viewport.keyboardOpen) return null;
+  return Math.min(currentHeight ?? viewport.height, viewport.height);
+}

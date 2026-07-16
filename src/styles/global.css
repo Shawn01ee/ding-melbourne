@@ -808,13 +808,15 @@ select {
 }
 
 .ghost-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 1px;
   opacity: 0;
   border: 0;
-  cursor: text;
+  pointer-events: none;
   font-size: 16px;
 }
 
@@ -1782,7 +1784,8 @@ kbd {
 
 .typing-stop.unfocused { border-color: var(--muted); }
 
-.typing-stop:focus-within {
+.typing-stop:focus-within,
+.typing-stop.focused {
   border-color: var(--cockpit-green);
   box-shadow:
     0 0 0 5px rgb(0 122 69 / 0.13),

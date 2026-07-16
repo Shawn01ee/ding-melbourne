@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { inkForBackground } from '../brand';
 import { charStatuses } from '../game/normalize';
 import type { GameAction, GameState } from '../game/reducer';
@@ -91,8 +92,50 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
     return () => observer.disconnect();
   }, [target, extras.length]);
 
+  const keyboardInput = (
+    <input
+      ref={inputRef}
+      className="ghost-input"
+      type="text"
+      name="ding-tram-typing-input"
+      value={state.input}
+      aria-label="Typing game keyboard"
+      aria-autocomplete="none"
+      autoCapitalize="off"
+      autoCorrect="off"
+      autoComplete="off"
+      enterKeyHint="next"
+      inputMode="text"
+      spellCheck={false}
+      readOnly={!typingActive}
+      onFocus={() => {
+        setFocused(true);
+        document.documentElement.classList.add('typing-input-focused');
+        if (window.innerWidth <= 700) requestAnimationFrame(() => window.scrollTo(0, 0));
+      }}
+      onBlur={() => {
+        setFocused(false);
+        document.documentElement.classList.remove('typing-input-focused');
+      }}
+      onChange={(e) => {
+        // Dispatch every change, including mid-IME-composition updates:
+        // freezing the controlled value here silently swallows composed input.
+        dispatch({ type: 'INPUT', value: e.target.value, at: Date.now() });
+      }}
+      onCompositionEnd={(e) => {
+        dispatch({ type: 'INPUT', value: e.currentTarget.value, at: Date.now() });
+      }}
+      onKeyDown={onKeyDown}
+      onPaste={(e) => {
+        e.preventDefault();
+        dispatch({ type: 'INVALID_ACTION' });
+      }}
+    />
+  );
+
   return (
-    <section className={`console${shake ? ' shake' : ''}`} aria-label="Typing console">
+    <>
+      <section className={`console${shake ? ' shake' : ''}`} aria-label="Typing console">
       <StatCard state={state} />
       <p
         className={`console-hint${typingActive && !focused ? ' warn' : ''}`}
@@ -134,7 +177,7 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
         </div>
 
         <div
-          className={`stop-slot typing-stop${state.input ? ' has-progress' : ''}${
+          className={`stop-slot typing-stop${focused ? ' focused' : ''}${state.input ? ' has-progress' : ''}${
             typingActive && !focused ? ' unfocused' : ''
           }`}
           onClick={focusInput}
@@ -172,42 +215,6 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
             </div>
             <div className="capsule-sub">{current.displayName}</div>
           </div>
-          <input
-            ref={inputRef}
-            className="ghost-input"
-            type="text"
-            value={state.input}
-            aria-label={`Type the stop name: ${current.displayName}`}
-            autoCapitalize="off"
-            autoCorrect="off"
-            autoComplete="off"
-            enterKeyHint="next"
-            inputMode="text"
-            spellCheck={false}
-            readOnly={!typingActive}
-            onFocus={() => {
-              setFocused(true);
-              document.documentElement.classList.add('typing-input-focused');
-              if (window.innerWidth <= 700) requestAnimationFrame(() => window.scrollTo(0, 0));
-            }}
-            onBlur={() => {
-              setFocused(false);
-              document.documentElement.classList.remove('typing-input-focused');
-            }}
-            onChange={(e) => {
-              // Dispatch every change, including mid-IME-composition updates:
-              // freezing the controlled value here silently swallows composed input.
-              dispatch({ type: 'INPUT', value: e.target.value, at: Date.now() });
-            }}
-            onCompositionEnd={(e) => {
-              dispatch({ type: 'INPUT', value: e.currentTarget.value, at: Date.now() });
-            }}
-            onKeyDown={onKeyDown}
-            onPaste={(e) => {
-              e.preventDefault();
-              dispatch({ type: 'INVALID_ACTION' });
-            }}
-          />
         </div>
 
         <div className="bar-side bar-next">
@@ -229,7 +236,9 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
             →
           </span>
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
+      {createPortal(keyboardInput, document.body)}
+    </>
   );
 }
