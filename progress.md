@@ -122,3 +122,7 @@
 - Kept the heritage result panel on its light tram-cream surface in both themes, but scoped its inherited text to heritage deep green instead of the night theme's near-white page text.
 - Added a dedicated dark neutral for journey-report metadata and the personal-best comparison so secondary text also remains readable.
 - Chromium completed a two-stop Route 1 run in night mode with metric contrast measured at 12.89:1 and supporting text at 4.87:1, with zero console/page errors.
+
+## Continuation: utility visual clearance
+- Increased the setup-page gap between Network Map and the day/night selector from 16px to 32px and reduced both outer shadow radii, so their visible silhouettes no longer merge.
+- Chromium measured 32px separation, zero overlap, and zero horizontal overflow at 1280, 1024, 768, and 390px widths; day and night screenshots were inspected.

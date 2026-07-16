@@ -16,7 +16,7 @@
   right: 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 32px;
   isolation: isolate;
 }
 
@@ -33,7 +33,7 @@
 
 .config-utilities .network-open,
 .config-utilities .theme-toggle {
-  box-shadow: 0 8px 18px rgb(23 33 29 / 0.08);
+  box-shadow: 0 5px 12px rgb(23 33 29 / 0.06);
 }
 
 .network-open {
