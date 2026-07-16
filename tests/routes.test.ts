@@ -13,12 +13,12 @@ const CURRENT_TRAM_ROUTES = [
 
 describe('generated Melbourne tram registry', () => {
   it('contains the complete 2026-07-10 official route set', () => {
-    const actual = AVAILABLE_ROUTES.map(({ shortName }) => shortName).sort((a, b) => Number(a) - Number(b));
+    const actual = AVAILABLE_ROUTES.map(({ shortName }) => shortName);
     expect(actual).toEqual(CURRENT_TRAM_ROUTES);
   });
 
-  it('keeps Route 96 as the first-visit default and supports the one-way City Circle', async () => {
-    expect(DEFAULT_ROUTE?.shortName).toBe('96');
+  it('starts first visits at Route 1 and supports the one-way City Circle', async () => {
+    expect(DEFAULT_ROUTE?.shortName).toBe('1');
     const cityCircle = AVAILABLE_ROUTES.find(({ shortName }) => shortName === '35');
     expect(cityCircle?.directionCount).toBe(1);
     expect((await loadRoute(cityCircle!.id)).route.directions).toHaveLength(1);

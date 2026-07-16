@@ -2198,6 +2198,7 @@ kbd {
     inset 14px 0 20px -20px rgb(0 0 0 / 0.45),
     inset -14px 0 20px -20px rgb(0 0 0 / 0.45);
   backdrop-filter: none;
+  color: var(--heritage-deep);
 }
 
 .result-route {
@@ -2206,7 +2207,7 @@ kbd {
   justify-content: center;
   gap: 10px;
   margin: 0 0 12px;
-  color: var(--muted);
+  color: #637169;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -2275,12 +2276,14 @@ kbd {
 }
 
 .result-grid dd {
+  color: var(--heritage-deep);
   font-size: clamp(1.3rem, 2.4vw, 1.85rem);
   font-variant-numeric: tabular-nums;
 }
 
 .result-panel .pb-compare {
   margin: 14px 0;
+  color: #637169;
   font-size: 0.72rem;
   text-align: center;
 }

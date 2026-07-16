@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { primeAudio } from '../audio/bell';
 import { NetworkOverview } from './NetworkOverview';
 import { ThemeToggle } from './ThemeToggle';
@@ -50,14 +50,9 @@ export function ConfigScreen({
   onOpenInfo,
 }: ConfigScreenProps) {
   const { config } = state;
-  const selectedRouteRef = useRef<HTMLButtonElement>(null);
   const direction = route.route.directions[directionIndexOf(state)];
   // Any stop except the terminus can be a start (a run needs ≥1 hop).
   const startableStops = direction.stops.slice(0, -1);
-
-  useEffect(() => {
-    selectedRouteRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [route.route.id]);
 
   const start = () => {
     // Prime Web Audio while this trusted click is active. Later typing cues
@@ -157,7 +152,6 @@ export function ConfigScreen({
               return (
                 <button
                   key={summary.id}
-                  ref={selected ? selectedRouteRef : undefined}
                   type="button"
                   role="radio"
                   aria-checked={selected}

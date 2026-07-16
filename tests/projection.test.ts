@@ -15,6 +15,29 @@ const reference: [number, number][] = [
   [145.05, -37.8],
 ];
 
+function retracedLoopCount(points: { x: number; y: number }[]): number {
+  let count = 0;
+  for (let end = 3; end < points.length; end++) {
+    for (let start = end - 3; start >= 0; start--) {
+      if (Math.hypot(points[end].x - points[start].x, points[end].y - points[start].y) > 2.5) continue;
+      const candidate = points.slice(start, end + 1);
+      let length = 0;
+      let twiceArea = 0;
+      for (let i = 1; i < candidate.length; i++) {
+        length += Math.hypot(candidate[i].x - candidate[i - 1].x, candidate[i].y - candidate[i - 1].y);
+      }
+      for (let i = 0; i < candidate.length; i++) {
+        const a = candidate[i];
+        const b = candidate[(i + 1) % candidate.length];
+        twiceArea += a.x * b.y - b.x * a.y;
+      }
+      const areaRatio = Math.abs(twiceArea) / 2 / Math.max(length * length, 1);
+      if (length >= 8 && areaRatio <= 0.012) count++;
+    }
+  }
+  return count;
+}
+
 describe('shared map projection', () => {
   it('projects the active route exactly like projectPath', () => {
     const shared = projectCoordinates(reference, reference, 1000, 640, 70);
@@ -59,10 +82,31 @@ describe('shared map projection', () => {
     }
   });
 
+  it('erases a multi-point out-and-back before Batman-Park-style retracing can render', () => {
+    const retraced: [number, number][] = [
+      [144.95, -37.9],
+      [144.96, -37.89],
+      [144.97, -37.88],
+      [144.98, -37.87],
+      [144.97, -37.88],
+      [144.96, -37.89],
+      [144.97, -37.88],
+      [144.99, -37.86],
+    ];
+    const path = projectPath(retraced, 1000, 640, 70);
+
+    expect(path.points.length).toBeLessThanOrEqual(5);
+    expect(retracedLoopCount(path.points)).toBe(0);
+  });
+
   it('keeps every generated tram direction forward-only after cleanup', () => {
     for (const route of generatedRoutes) {
       for (const direction of route.route.directions) {
         const path = projectPath(direction.shape, 1000, 640, 70);
+        expect(
+          retracedLoopCount(path.points),
+          `${route.route.shortName} ${direction.headsign} retraced loops`,
+        ).toBe(0);
         const stopProgresses = direction.stops.map((id) =>
           path.remapProgress(stopProgress(route, id)),
         );

@@ -23,6 +23,10 @@ interface TracedPoint {
 
 const HAIRPIN_COSINE = -0.75;
 const MIN_SEGMENT = 1e-7;
+const MIN_RETRACE_PROGRESS = 0.002;
+const MAX_RETRACE_GAP = 2.5;
+const MIN_RETRACE_LENGTH = 8;
+const MAX_RETRACE_AREA_RATIO = 0.012;
 
 function segmentLengths(points: { x: number; y: number }[]): { lengths: number[]; total: number } {
   const lengths: number[] = [];
@@ -35,15 +39,46 @@ function segmentLengths(points: { x: number; y: number }[]): { lengths: number[]
   return { lengths, total };
 }
 
-/**
- * Remove single-vertex reversals from published shapes.
- *
- * Some GTFS polylines contain tiny overshoot-and-return spikes at junctions.
- * They are valid ordered coordinates but make a vehicle visibly reverse along
- * an otherwise forward trip. Real tram curves cannot change heading by more
- * than ~139° at one vertex, so erase only those near-U-turn middle points.
- */
-function sanitiseHairpins(points: { x: number; y: number }[]): TracedPoint[] {
+/** Remove narrow out-and-back sections while preserving real loops with area. */
+function eraseRetracedLoops(points: TracedPoint[]): TracedPoint[] {
+  const clean: TracedPoint[] = [];
+
+  for (const point of points) {
+    let loopStart = -1;
+    for (let i = clean.length - 3; i >= 0; i--) {
+      const sourceSpan = point.sourceProgress - clean[i].sourceProgress;
+      if (sourceSpan < MIN_RETRACE_PROGRESS) continue;
+      if (Math.hypot(point.x - clean[i].x, point.y - clean[i].y) > MAX_RETRACE_GAP) continue;
+
+      const candidate = [...clean.slice(i), point];
+      let length = 0;
+      let twiceArea = 0;
+      for (let j = 1; j < candidate.length; j++) {
+        length += Math.hypot(
+          candidate[j].x - candidate[j - 1].x,
+          candidate[j].y - candidate[j - 1].y,
+        );
+      }
+      for (let j = 0; j < candidate.length; j++) {
+        const a = candidate[j];
+        const b = candidate[(j + 1) % candidate.length];
+        twiceArea += a.x * b.y - b.x * a.y;
+      }
+      const areaRatio = Math.abs(twiceArea) / 2 / Math.max(length * length, 1);
+      if (length >= MIN_RETRACE_LENGTH && areaRatio <= MAX_RETRACE_AREA_RATIO) {
+        loopStart = i;
+        break;
+      }
+    }
+
+    if (loopStart >= 0) clean.splice(loopStart);
+    clean.push(point);
+  }
+
+  return clean;
+}
+
+function sanitiseGeometry(points: { x: number; y: number }[]): TracedPoint[] {
   const { lengths, total } = segmentLengths(points);
   const sourceArcs = [0];
   for (const length of lengths) sourceArcs.push(sourceArcs[sourceArcs.length - 1] + length);
@@ -54,7 +89,9 @@ function sanitiseHairpins(points: { x: number; y: number }[]): TracedPoint[] {
   }));
   const clean: TracedPoint[] = [];
 
-  for (const point of traced) {
+  // Some published shapes also contain a one-vertex overshoot at a junction.
+  // A real tram cannot reverse heading by more than ~139° at one vertex.
+  for (const point of eraseRetracedLoops(traced)) {
     const previous = clean[clean.length - 1];
     if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) < MIN_SEGMENT) continue;
     clean.push(point);
@@ -172,5 +209,5 @@ export function projectPath(
   padding: number,
 ): ProjectedPath {
   const projected = projectCoordinates(shape, shape, width, height, padding);
-  return createPath(sanitiseHairpins(projected));
+  return createPath(sanitiseGeometry(projected));
 }

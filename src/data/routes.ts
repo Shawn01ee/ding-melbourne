@@ -26,11 +26,9 @@ const generatedModules = import.meta.glob('./generated/route-*.json', {
 const routeCache = new Map<string, Promise<RouteData>>();
 
 function sortRoutes(routes: RouteSummary[]): RouteSummary[] {
-  return [...routes].sort((a, b) => {
-    if (a.shortName === '96') return -1;
-    if (b.shortName === '96') return 1;
-    return Number(a.shortName) - Number(b.shortName) || a.shortName.localeCompare(b.shortName);
-  });
+  return [...routes].sort(
+    (a, b) => Number(a.shortName) - Number(b.shortName) || a.shortName.localeCompare(b.shortName),
+  );
 }
 
 export const ROUTE_SOURCE_UPDATED_AT = index.sourceUpdatedAt;
