@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { RouteData } from '../src/data/types';
+import { stopProgress } from '../src/data/types';
 import { projectCoordinates, projectPath } from '../src/map/projection';
+
+const generatedRoutes = Object.values(
+  import.meta.glob<RouteData>('../src/data/generated/route-*.json', {
+    eager: true,
+    import: 'default',
+  }),
+);
 
 const reference: [number, number][] = [
   [144.95, -37.9],
@@ -24,5 +33,53 @@ describe('shared map projection', () => {
     expect(points[0].x).toBeLessThan(activePoints[1].x);
     expect(points[1].x).toBeGreaterThan(activePoints[1].x);
     expect(points[1].y).toBeLessThan(activePoints[1].y);
+  });
+
+  it('erases overshoot-and-return spikes while keeping progress forward', () => {
+    const spiked: [number, number][] = [
+      [144.95, -37.9],
+      [144.98, -37.87],
+      [144.951, -37.899],
+      [145.02, -37.83],
+      [145.05, -37.8],
+    ];
+    const path = projectPath(spiked, 1000, 640, 70);
+    const mapped = [0, 0.2, 0.4, 0.6, 0.8, 1].map((progress) => path.remapProgress(progress));
+
+    expect(path.points.length).toBeLessThan(spiked.length);
+    expect(mapped).toEqual([...mapped].sort((a, b) => a - b));
+    for (let i = 1; i < path.points.length - 1; i++) {
+      const a = path.points[i - 1];
+      const b = path.points[i];
+      const c = path.points[i + 1];
+      const ab = [b.x - a.x, b.y - a.y];
+      const bc = [c.x - b.x, c.y - b.y];
+      const cosine = (ab[0] * bc[0] + ab[1] * bc[1]) / (Math.hypot(...ab) * Math.hypot(...bc));
+      expect(cosine).toBeGreaterThan(-0.75);
+    }
+  });
+
+  it('keeps every generated tram direction forward-only after cleanup', () => {
+    for (const route of generatedRoutes) {
+      for (const direction of route.route.directions) {
+        const path = projectPath(direction.shape, 1000, 640, 70);
+        const stopProgresses = direction.stops.map((id) =>
+          path.remapProgress(stopProgress(route, id)),
+        );
+        expect(stopProgresses, `${route.route.shortName} ${direction.headsign} stop order`).toEqual(
+          [...stopProgresses].sort((a, b) => a - b),
+        );
+
+        for (let i = 1; i < path.points.length - 1; i++) {
+          const a = path.points[i - 1];
+          const b = path.points[i];
+          const c = path.points[i + 1];
+          const ab = [b.x - a.x, b.y - a.y];
+          const bc = [c.x - b.x, c.y - b.y];
+          const cosine = (ab[0] * bc[0] + ab[1] * bc[1]) / (Math.hypot(...ab) * Math.hypot(...bc));
+          expect(cosine, `${route.route.shortName} ${direction.headsign} point ${i}`).toBeGreaterThan(-0.75);
+        }
+      }
+    }
   });
 });

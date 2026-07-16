@@ -91,7 +91,7 @@ export function RouteCanvas({
   // Projected world points for every stop, plus a stable zoom derived from
   // the median gap between consecutive stops (so ~TARGET_STOPS_ACROSS fit).
   const { stopPoints, zoom } = useMemo(() => {
-    const pts = direction.stops.map((id) => path.pointAt(stopProgress(route, id)));
+    const pts = direction.stops.map((id) => path.pointAt(path.remapProgress(stopProgress(route, id))));
     const gaps: number[] = [];
     for (let i = 1; i < pts.length; i++) {
       gaps.push(Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
@@ -102,7 +102,7 @@ export function RouteCanvas({
     return { stopPoints: pts, zoom: z };
   }, [direction, path, route]);
 
-  const progressOf = (index: number) => stopProgress(route, direction.stops[index]);
+  const progressOf = (index: number) => path.remapProgress(stopProgress(route, direction.stops[index]));
   // The first prompt is typed at the boarding stop. From then on, accepted
   // characters physically pull the tram from the previous stop to the current
   // target. Wrong keys leave this value unchanged and never block the input.

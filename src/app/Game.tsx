@@ -4,6 +4,7 @@ import { ConfigScreen } from '../components/ConfigScreen';
 import { CountdownScreen } from '../components/CountdownScreen';
 import { Hud } from '../components/Hud';
 import { ResultScreen } from '../components/ResultScreen';
+import { infoPageFromHash, ServiceInfo, type InfoPageId } from '../components/ServiceInfo';
 import { StopConsole } from '../components/StopConsole';
 import { loadRoute, type RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
@@ -14,6 +15,7 @@ import { loadLastConfig, loadSettings, loadTheme, saveTheme } from '../storage/l
 export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initialRoute: RouteData }) {
   const [theme, setTheme] = useState(loadTheme);
   const [networkOpen, setNetworkOpen] = useState(false);
+  const [infoPage, setInfoPage] = useState<InfoPageId | null>(() => infoPageFromHash(window.location.hash));
   const [loadingRouteId, setLoadingRouteId] = useState<string | null>(null);
   const [routeLoadError, setRouteLoadError] = useState<string | null>(null);
   const [state, dispatch] = useReducer(
@@ -39,7 +41,29 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     saveTheme(theme);
   }, [theme]);
 
+  useEffect(() => {
+    const syncInfoPage = () => setInfoPage(infoPageFromHash(window.location.hash));
+    window.addEventListener('hashchange', syncInfoPage);
+    window.addEventListener('popstate', syncInfoPage);
+    return () => {
+      window.removeEventListener('hashchange', syncInfoPage);
+      window.removeEventListener('popstate', syncInfoPage);
+    };
+  }, []);
+
   const toggleTheme = () => setTheme((current) => current === 'day' ? 'night' : 'day');
+
+  const openInfo = (page: InfoPageId) => {
+    window.history.pushState(null, '', `#/${page}`);
+    setInfoPage(page);
+    window.scrollTo(0, 0);
+  };
+
+  const closeInfo = () => {
+    window.history.pushState(null, '', `${window.location.pathname}${window.location.search}`);
+    setInfoPage(null);
+    window.scrollTo(0, 0);
+  };
 
   const selectRoute = async (summary: RouteSummary) => {
     if (summary.id === route.route.id) return true;
@@ -74,6 +98,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         difficulty: state.config.difficulty,
         theme,
         networkOverviewOpen: state.phase === 'config' && networkOpen,
+        informationPage: state.phase === 'config' ? infoPage : null,
         networkRouteCount: networkRoutes.length,
         loadingRoute: loadingRouteId,
         stopIndex: state.stopIndex,
@@ -92,7 +117,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     return () => {
       delete testWindow.render_game_to_text;
     };
-  }, [loadingRouteId, networkOpen, networkRoutes.length, route, state, theme]);
+  }, [infoPage, loadingRouteId, networkOpen, networkRoutes.length, route, state, theme]);
 
   // Clock tick while a run is live.
   useEffect(() => {
@@ -171,6 +196,16 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     containerRef.current?.querySelector<HTMLInputElement>('.ghost-input')?.focus();
   };
 
+  if (state.phase === 'config' && infoPage)
+    return (
+      <ServiceInfo
+        page={infoPage}
+        theme={theme}
+        onNavigate={openInfo}
+        onClose={closeInfo}
+        onToggleTheme={toggleTheme}
+      />
+    );
   if (state.phase === 'config')
     return (
       <ConfigScreen
@@ -186,6 +221,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         onToggleTheme={toggleTheme}
         onOpenNetwork={() => setNetworkOpen(true)}
         onCloseNetwork={() => setNetworkOpen(false)}
+        onOpenInfo={openInfo}
       />
     );
   if (state.phase === 'countdown')

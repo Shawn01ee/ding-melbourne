@@ -3,6 +3,7 @@ import { primeAudio } from '../audio/bell';
 import { NetworkOverview } from './NetworkOverview';
 import { ThemeToggle } from './ThemeToggle';
 import { TramLogo } from './TramLogo';
+import { INFO_NAV_ITEMS, type InfoPageId } from './ServiceInfo';
 import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import type { GameAction, GameState, Mode } from '../game/reducer';
@@ -24,6 +25,7 @@ interface ConfigScreenProps {
   onToggleTheme: () => void;
   onOpenNetwork: () => void;
   onCloseNetwork: () => void;
+  onOpenInfo: (page: InfoPageId) => void;
 }
 
 const MODES: [Mode, string, string][] = [
@@ -45,6 +47,7 @@ export function ConfigScreen({
   onToggleTheme,
   onOpenNetwork,
   onCloseNetwork,
+  onOpenInfo,
 }: ConfigScreenProps) {
   const { config } = state;
   const selectedRouteRef = useRef<HTMLButtonElement>(null);
@@ -286,6 +289,13 @@ export function ConfigScreen({
       </section>
 
       <footer className="config-footer">
+        <nav className="config-service-nav" aria-label="Project information">
+          {INFO_NAV_ITEMS.map((item) => (
+            <button key={item.id} type="button" onClick={() => onOpenInfo(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
         <p>Independent fan-made project — not affiliated with Transport Victoria or Yarra Trams.</p>
         <p>
           Contains public transport data supplied by the Victorian Department of Transport and

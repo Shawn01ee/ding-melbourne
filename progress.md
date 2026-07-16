@@ -102,3 +102,18 @@ Original prompt: 이런느낌으로 좀 해볼 수 없을까? 이번 수정은 �
 - Initial main JavaScript fell from 236.7KB gzip to 76.7KB gzip; first visit then fetches the default Route 96 chunk at 7.4KB gzip. The build no longer emits the >500KB chunk warning.
 - Replaced the GitHub Pages deployment workflow with a read-only CI workflow. `vercel.json` makes `npm run verify` (68 tests + typecheck + build) the Vercel production gate, and the Vercel URL is now canonical.
 - Browser verification observed only Route 96 on first load and then Route 19/35/86 exactly when selected. The geographic explorer, animated focus, night persistence, character combo, and 390px mobile layout passed with zero console/page errors.
+
+## Continuation: separated setup utilities
+- Increased the spacing between Network Map and the day/night selector, and tightened their card shadows so the two controls no longer visually merge.
+- Verification: 68/68 tests and production build pass. Playwright confirmed a 16px gap, zero overlap, zero horizontal overflow, working theme/map controls, and zero console/page errors at 1280px, 1024px, 768px, and 390px widths.
+
+## Continuation: original passenger-information hub
+- Added an eight-item service-information structure inspired by the completeness of the supplied reference, while keeping the visual language and copy specific to DING! MELBOURNE.
+- Setup now links to How to Play, Typing Guide, FAQ, About, Accessibility, Privacy, Terms, and Data & Credits; each opens as a hash-addressable in-app document with day/night support and a persistent return to the game.
+- Content describes only implemented behaviour and explicitly identifies absent accounts, cloud sync, advertising, analytics, live operations, and journey-planning guarantees.
+- Browser checks cover desktop/mobile scrolling, direct hashes, all navigation items, back history, return to setup, night rendering, and zero horizontal overflow. Existing network-map selection and character-combo gameplay still pass without console/page errors.
+
+## Continuation: forward-only tram geometry
+- Audited every generated route/direction: stop progress was monotonic, but the published GTFS shapes contained 30 single-vertex near-U-turn spikes across multiple routes, making the tram visibly double back despite forward game progress.
+- The renderer now removes only impossible one-vertex hairpins and remaps source arc progress monotonically onto the cleaned rail, keeping the tram on the displayed route and every accepted character moving forward along that route.
+- Added a complete 24-route/all-direction geometry regression. A browser drive through Route 96's affected Casino–Batman Park CBD span confirmed monotonically increasing completed-track length, no direction reversal, at most 0.04px rail deviation, and zero console/page errors.

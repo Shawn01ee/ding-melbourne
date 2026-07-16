@@ -1,0 +1,391 @@
+/* Passenger information pages: an original tram-stop manual treatment. */
+.config-service-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin-bottom: 8px;
+}
+
+.config-service-nav button,
+.info-nav button,
+.info-back,
+.info-page-footer button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.config-service-nav button {
+  color: var(--charcoal);
+  font-size: 0.63rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: rgb(0 122 69 / 0.28);
+  text-underline-offset: 3px;
+}
+
+.config-service-nav button:hover { color: var(--cockpit-green); }
+
+.info-screen {
+  position: relative;
+  isolation: isolate;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(circle at 80% 8%, rgb(255 255 255 / 0.94), transparent 24%),
+    linear-gradient(135deg, #f8faf6, var(--map-paper));
+}
+
+.info-network {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.42;
+}
+
+.info-network path {
+  fill: none;
+  stroke: #dce5df;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.info-network path:nth-child(2) { stroke: #e8ddd4; }
+.info-network path:nth-child(3) { stroke: #dce7ea; }
+
+.info-topbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  min-height: 74px;
+  padding: 10px clamp(20px, 4vw, 64px);
+  border-bottom: 1px solid rgb(23 33 29 / 0.1);
+  background: color-mix(in srgb, var(--glass) 92%, transparent);
+  box-shadow: 0 8px 28px rgb(23 33 29 / 0.05);
+  backdrop-filter: blur(22px) saturate(1.1);
+}
+
+.info-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.info-home .tram-logo { width: 34px; height: 34px; }
+
+.info-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.7vw, 26px);
+  min-width: 0;
+}
+
+.info-nav button {
+  position: relative;
+  color: var(--muted);
+  font-size: clamp(0.62rem, 0.85vw, 0.76rem);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.info-nav button:hover,
+.info-nav button[aria-current='page'] { color: var(--charcoal); }
+
+.info-nav button[aria-current='page']::after {
+  position: absolute;
+  right: 0;
+  bottom: -9px;
+  left: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--cockpit-green);
+  content: '';
+}
+
+.info-theme-toggle {
+  box-shadow: none;
+}
+
+.info-document {
+  width: min(840px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: clamp(34px, 6vw, 78px) 0 64px;
+}
+
+.info-back {
+  margin-bottom: 34px;
+  color: var(--cockpit-green);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.info-document-header {
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.info-document-header p {
+  margin: 0 0 10px;
+  color: var(--cockpit-green);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.info-document-header h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 6vw, 4.9rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.info-document-header div {
+  max-width: 690px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.info-document-header small {
+  display: block;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.info-document-body {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  padding-top: 42px;
+}
+
+.info-section > h2 {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin: 0 0 20px;
+  font-size: 1.3rem;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.info-section > h2 > span {
+  width: 4px;
+  border-radius: 999px;
+  background: var(--cockpit-green);
+}
+
+.info-section > p,
+.info-section > div > p {
+  margin: 0 0 14px;
+  color: color-mix(in srgb, var(--charcoal) 82%, var(--muted));
+  font-size: 0.92rem;
+  line-height: 1.78;
+}
+
+.info-section a {
+  color: #1269b0;
+  font-weight: 750;
+  text-underline-offset: 3px;
+}
+
+.info-section code {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--card);
+  font-size: 0.82em;
+}
+
+.info-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: info-step;
+}
+
+.info-steps li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 14px;
+  counter-increment: info-step;
+}
+
+.info-step-marker {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--cockpit-green);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.info-step-marker::after { content: counter(info-step); }
+.info-steps strong { display: block; margin: 3px 0 4px; font-size: 0.9rem; }
+.info-steps p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
+
+.info-note {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, #3d91cb 32%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, #d9edfa 44%, var(--card));
+}
+
+.info-note strong { font-size: 0.82rem; }
+.info-note p { margin: 8px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.65; }
+
+.info-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.info-card-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.info-qa {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+}
+
+.info-qa h3 { margin: 0 0 9px; font-size: 0.86rem; }
+.info-qa div { color: var(--muted); font-size: 0.78rem; line-height: 1.66; }
+
+.info-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+}
+
+.info-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.info-table-wrap th,
+.info-table-wrap td { padding: 13px 15px; border-bottom: 1px solid var(--line); text-align: left; }
+.info-table-wrap th { background: color-mix(in srgb, var(--map-paper) 70%, var(--card)); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.info-table-wrap tr:last-child td { border-bottom: 0; }
+.info-table-wrap td:first-child { font-weight: 800; }
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+  color: color-mix(in srgb, var(--charcoal) 82%, var(--muted));
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+
+.info-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.info-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--charcoal);
+  color: var(--cream);
+}
+
+.info-facts strong { font-size: clamp(1.2rem, 3vw, 1.8rem); letter-spacing: -0.04em; }
+.info-facts span { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; opacity: 0.72; }
+
+.info-page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px clamp(20px, 4vw, 64px);
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.info-page-footer p { margin: 0; }
+.info-page-footer button { color: var(--cockpit-green); font-weight: 850; }
+
+html[data-theme='night'] .info-screen {
+  background:
+    radial-gradient(circle at 80% 8%, rgb(22 52 66 / 0.48), transparent 24%),
+    linear-gradient(135deg, #07131f, var(--map-paper));
+}
+
+html[data-theme='night'] .info-network { opacity: 0.22; }
+html[data-theme='night'] .info-network path { stroke: #27414d; }
+html[data-theme='night'] .info-network path:nth-child(2) { stroke: #403a37; }
+html[data-theme='night'] .info-network path:nth-child(3) { stroke: #263f4c; }
+html[data-theme='night'] .info-note { background: #102b3b; }
+html[data-theme='night'] .info-section a { color: #70b9ee; }
+
+@media (max-width: 1080px) {
+  .info-topbar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; }
+  .info-home span { display: none; }
+  .info-nav { justify-content: flex-start; overflow-x: auto; padding: 15px 4px; scrollbar-width: none; }
+  .info-nav::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 700px) {
+  .info-topbar {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 64px;
+    padding: 7px 14px;
+  }
+  .info-home .tram-logo { width: 32px; height: 32px; }
+  .info-theme-toggle { display: none; }
+  .info-nav { gap: 18px; }
+  .info-nav button { font-size: 0.68rem; }
+  .info-document { width: min(100% - 32px, 840px); padding-top: 28px; }
+  .info-back { margin-bottom: 25px; }
+  .info-document-header h1 { font-size: clamp(2.3rem, 13vw, 3.7rem); }
+  .info-document-header div { font-size: 0.9rem; line-height: 1.6; }
+  .info-document-body { gap: 40px; padding-top: 34px; }
+  .info-section > h2 { font-size: 1.15rem; }
+  .info-card-grid,
+  .info-card-grid.two { grid-template-columns: 1fr; }
+  .info-facts { grid-template-columns: 1fr; }
+  .info-facts > div { padding: 14px 16px; }
+  .info-page-footer { align-items: flex-start; flex-direction: column; }
+  .config-service-nav { justify-content: center; }
+}
