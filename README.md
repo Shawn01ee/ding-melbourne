@@ -9,14 +9,23 @@ Schedule (both directions where published; Route 35 City Circle is circular).
 Modes: Full Route, 10-Stop Section, 60-second Sprint. Standard and Driver
 difficulties, responsive synthesized tram sounds, a follow-camera for long
 lines, a day/night theme, a complete 24-route network overview, local personal
-bests, no backend.
+bests, installable app/offline support, no backend.
+
+## Install as an app
+
+- iPhone/iPad: open the site in Safari, tap **Share**, then **Add to Home Screen**.
+- Android/desktop Chrome or Edge: use the browser's **Install app** action.
+
+The installed version opens without browser chrome and caches the game shell plus
+all 24 route files for repeat play offline. On phones, gameplay automatically
+switches to a compact cockpit while the on-screen keyboard is visible.
 
 ## Run
 
 ```bash
 npm install
 npm run dev       # local dev server
-npm test          # 68 unit tests (gameplay, data validation, complete route registry)
+npm test          # 76 unit tests (gameplay, viewport handling, data validation, route registry)
 npm run build     # typecheck + production build
 npm run verify    # test + typecheck + production build (CI/Vercel gate)
 ```
@@ -30,6 +39,8 @@ npm run verify    # test + typecheck + production build (CI/Vercel gate)
   all 24 currently published tram routes; scrollable route picker, Section mode,
   follow-camera, a selectable geographic network explorer with route focus, and
   per-route lazy loading to keep the initial download small.
+- ✅ Installable PWA: standalone home-screen mode, app icons, updateable service
+  worker, offline replay, and a Visual Viewport-driven mobile keyboard layout.
 - ⬜ Next: web font + branding polish, result sharing, then accounts + leaderboard
   (Supabase) with server-side score validation.
 

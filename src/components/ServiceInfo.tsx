@@ -166,7 +166,7 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
           <div className="info-card-grid">
             <Qa question="Do I have to start at the terminus?">No. Select any listed start stop. The final terminus cannot be a start because every run needs at least one hop.</Qa>
             <Qa question="Why did my wrong letter disappear?">That is intentional. It is recorded as a miss and resets the combo, but the input stays at the last correct character.</Qa>
-            <Qa question="Can I play on a phone?">Yes, the layout is responsive and uses the device keyboard. A physical keyboard is still the better experience for sustained typing practice.</Qa>
+            <Qa question="Can I play on a phone?">Yes. Add the site to your home screen for an app-style full-screen launch. While the device keyboard is open, the cockpit compacts itself so the destination board, tram, stats, and typing target remain visible. A physical keyboard is still better for sustained practice.</Qa>
             <Qa question="Can I mute the game?">Yes. Bell on/off is part of the setup and all movement remains immediate when sound is disabled.</Qa>
           </div>
         </Section>

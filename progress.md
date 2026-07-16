@@ -126,3 +126,11 @@
 ## Continuation: utility visual clearance
 - Increased the setup-page gap between Network Map and the day/night selector from 16px to 32px and reduced both outer shadow radii, so their visible silhouettes no longer merge.
 - Chromium measured 32px separation, zero overlap, and zero horizontal overflow at 1280, 1024, 768, and 390px widths; day and night screenshots were inspected.
+
+## Continuation: installable web app and mobile keyboard cockpit
+- Added a Vite-generated PWA manifest, original 192/512px tram app icons, standalone home-screen metadata, an auto-updating Workbox service worker, and offline precaching for the shell plus all 24 lazy route chunks.
+- Added a Visual Viewport controller that detects the device keyboard without depending on the experimental Virtual Keyboard API. It publishes the visible viewport dimensions as CSS variables and never mistakes ordinary browser chrome changes for a keyboard.
+- When the keyboard is open on a phone, the game now uses the genuinely visible viewport: decorative HUD controls are hidden, the journey board stays at the top, the tram remains in the open map area, and the compact stats/typing target sit immediately above the keyboard.
+- Kept the hidden input at 16px to prevent iOS focus zoom and added mobile keyboard hints while preserving continuous per-character input.
+- Added install/offline instructions to the README and phone-specific guidance to the in-app FAQ.
+- Verification: 76/76 tests and production build pass. Chromium validated 460px and 390px keyboard-visible heights with no overlap or horizontal overflow, continuous typing and forward tram motion, zero console/page errors, a valid install manifest, both icon sizes, active service worker, 24 cached route chunks, and offline loading of Route 109.

@@ -172,6 +172,8 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
             autoCapitalize="off"
             autoCorrect="off"
             autoComplete="off"
+            enterKeyHint="next"
+            inputMode="text"
             spellCheck={false}
             readOnly={!typingActive}
             onFocus={() => setFocused(true)}

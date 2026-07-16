@@ -815,6 +815,7 @@ select {
   opacity: 0;
   border: 0;
   cursor: text;
+  font-size: 16px;
 }
 
 .console-hint {
@@ -1375,7 +1376,7 @@ kbd {
   isolation: isolate;
   display: block;
   width: 100%;
-  height: 100dvh;
+  height: var(--visual-viewport-height, 100dvh);
   min-height: 560px;
   overflow: hidden;
   background: var(--map-paper);
@@ -2496,6 +2497,81 @@ kbd {
   }
   .tram-buffer { width: 22px; height: 9px; }
   .tram-apron strong { font-size: 0.42rem; }
+
+  html.keyboard-open,
+  html.keyboard-open body,
+  html.keyboard-open #root {
+    height: var(--visual-viewport-height, 100dvh);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html.keyboard-open .game-screen {
+    position: fixed;
+    top: var(--visual-viewport-offset-top, 0px);
+    left: 0;
+    width: var(--visual-viewport-width, 100vw);
+    height: var(--visual-viewport-height, 100dvh);
+    min-height: 0;
+  }
+
+  html.keyboard-open .hud {
+    top: 6px;
+    right: 8px;
+    left: 8px;
+    justify-content: center;
+  }
+
+  html.keyboard-open .hud-service-card,
+  html.keyboard-open .hud-right {
+    display: none;
+  }
+
+  html.keyboard-open .journey-board {
+    top: 0;
+    width: 100%;
+    min-height: 46px;
+    padding: 6px 10px;
+  }
+
+  html.keyboard-open .console {
+    right: 6px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 6px;
+    width: calc(100% - 12px);
+    min-height: 78px;
+  }
+
+  html.keyboard-open .console .stat-card {
+    bottom: calc(100% + 8px);
+    width: min(390px, 96%);
+    min-height: 40px;
+    padding-block: 5px;
+  }
+
+  html.keyboard-open .console-hint { display: none; }
+
+  html.keyboard-open .console-bar {
+    grid-template-columns: 12px minmax(0, 1fr) 12px;
+    gap: 2px;
+    min-height: 72px;
+    padding: 6px 4px;
+  }
+
+  html.keyboard-open .console .bar-side {
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  html.keyboard-open .typing-stop {
+    min-height: 88px;
+    margin: -12px 0;
+    padding: 8px 12px;
+  }
+
+  html.keyboard-open .capsule-sub { display: none; }
+  html.keyboard-open .target-chars { font-size: clamp(1.15rem, 6.2vw, 1.7rem); }
 }
 
 @media (max-height: 700px) and (min-width: 1001px) {

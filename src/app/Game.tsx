@@ -11,6 +11,7 @@ import type { RouteData } from '../data/types';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
 import { RouteCanvas } from '../map/RouteCanvas';
 import { loadLastConfig, loadSettings, loadTheme, saveTheme } from '../storage/local';
+import { appViewport, type AppViewport } from './visualViewport';
 
 export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initialRoute: RouteData }) {
   const [theme, setTheme] = useState(loadTheme);
@@ -29,6 +30,19 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     },
   );
   const containerRef = useRef<HTMLDivElement>(null);
+  const baselineViewportHeightRef = useRef(
+    window.visualViewport?.height ?? window.innerHeight,
+  );
+  const [viewport, setViewport] = useState<AppViewport>(() => {
+    const visual = window.visualViewport;
+    return appViewport(
+      baselineViewportHeightRef.current,
+      visual?.height ?? window.innerHeight,
+      visual?.width ?? window.innerWidth,
+      visual?.offsetTop ?? 0,
+      false,
+    );
+  });
   const route = state.route;
   const networkRoutes = useMemo(() => routes, [routes]);
 
@@ -40,6 +54,93 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     document.documentElement.dataset.theme = theme;
     saveTheme(theme);
   }, [theme]);
+
+  // The on-screen keyboard usually shrinks only the visual viewport, leaving
+  // 100dvh/layout viewport content hidden behind it. Keep the live game sized
+  // to what is actually visible and expose a keyboard-open layout hook.
+  useEffect(() => {
+    const root = document.documentElement;
+    const visual = window.visualViewport;
+    let frame = 0;
+    let orientationTimer = 0;
+
+    const typingInputFocused = () =>
+      document.activeElement instanceof HTMLInputElement &&
+      document.activeElement.classList.contains('ghost-input');
+
+    const sync = () => {
+      frame = 0;
+      const height = visual?.height ?? window.innerHeight;
+      const width = visual?.width ?? window.innerWidth;
+      const offsetTop = visual?.offsetTop ?? 0;
+      const focused = typingInputFocused();
+      if (!focused) {
+        baselineViewportHeightRef.current = Math.max(
+          baselineViewportHeightRef.current,
+          height + offsetTop,
+        );
+      }
+      const next = appViewport(
+        baselineViewportHeightRef.current,
+        height,
+        width,
+        offsetTop,
+        focused,
+      );
+      root.style.setProperty('--visual-viewport-height', `${next.height}px`);
+      root.style.setProperty('--visual-viewport-width', `${next.width}px`);
+      root.style.setProperty('--visual-viewport-offset-top', `${next.offsetTop}px`);
+      root.style.setProperty('--keyboard-inset', `${next.keyboardInset}px`);
+      root.classList.toggle('keyboard-open', next.keyboardOpen);
+      setViewport((current) =>
+        current.height === next.height &&
+        current.width === next.width &&
+        current.offsetTop === next.offsetTop &&
+        current.keyboardInset === next.keyboardInset &&
+        current.keyboardOpen === next.keyboardOpen
+          ? current
+          : next,
+      );
+    };
+
+    const scheduleSync = () => {
+      if (!frame) frame = requestAnimationFrame(sync);
+    };
+    const resetAfterOrientation = () => {
+      window.clearTimeout(orientationTimer);
+      orientationTimer = window.setTimeout(() => {
+        // Do not learn the keyboard-reduced viewport as the new baseline.
+        // Once the typing field loses focus, sync() safely refreshes it.
+        if (!typingInputFocused()) {
+          baselineViewportHeightRef.current = visual?.height ?? window.innerHeight;
+        }
+        scheduleSync();
+      }, 250);
+    };
+
+    sync();
+    visual?.addEventListener('resize', scheduleSync);
+    visual?.addEventListener('scroll', scheduleSync);
+    window.addEventListener('resize', scheduleSync);
+    window.addEventListener('orientationchange', resetAfterOrientation);
+    document.addEventListener('focusin', scheduleSync);
+    document.addEventListener('focusout', scheduleSync);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.clearTimeout(orientationTimer);
+      visual?.removeEventListener('resize', scheduleSync);
+      visual?.removeEventListener('scroll', scheduleSync);
+      window.removeEventListener('resize', scheduleSync);
+      window.removeEventListener('orientationchange', resetAfterOrientation);
+      document.removeEventListener('focusin', scheduleSync);
+      document.removeEventListener('focusout', scheduleSync);
+      root.classList.remove('keyboard-open');
+      root.style.removeProperty('--visual-viewport-height');
+      root.style.removeProperty('--visual-viewport-width');
+      root.style.removeProperty('--visual-viewport-offset-top');
+      root.style.removeProperty('--keyboard-inset');
+    };
+  }, []);
 
   useEffect(() => {
     const syncInfoPage = () => setInfoPage(infoPageFromHash(window.location.hash));
@@ -111,13 +212,16 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         combo: state.streak,
         bestCombo: state.bestStreak,
         errors: state.errors,
+        keyboardOpen: viewport.keyboardOpen,
+        visualViewportHeight: viewport.height,
+        keyboardInset: viewport.keyboardInset,
         note: 'Each correct character raises combo and moves the tram. A miss resets combo but does not stick; a completed stop opens the next target immediately.',
       });
     };
     return () => {
       delete testWindow.render_game_to_text;
     };
-  }, [infoPage, loadingRouteId, networkOpen, networkRoutes.length, route, state, theme]);
+  }, [infoPage, loadingRouteId, networkOpen, networkRoutes.length, route, state, theme, viewport]);
 
   // Clock tick while a run is live.
   useEffect(() => {
