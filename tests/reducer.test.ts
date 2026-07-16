@@ -66,6 +66,17 @@ describe('CONFIG', () => {
     expect(targetText(fresh({ difficulty: 'driver' }))).toBe('Stop A/Test St');
   });
 
+  it('adds the intersecting road when short stop names collide', () => {
+    const duplicated = makeRoute(3);
+    duplicated.stops['s1-d0'].displayName = 'Stop A/Other Rd #2';
+    duplicated.stops['s1-d0'].answers.easy = ['Stop A'];
+    duplicated.stops['s1-d0'].answers.standard = ['Stop A/Other Rd'];
+    duplicated.route.directions[0].stops = ['s0-d0', 's1-d0', 's2-d0'];
+
+    expect(targetText(initialState(duplicated))).toBe('Stop A Test St');
+    expect(targetText({ ...initialState(duplicated), stopIndex: 1 })).toBe('Stop A Other Rd');
+  });
+
   it('resets startStopIndex when direction changes', () => {
     const s = run(
       fresh(),

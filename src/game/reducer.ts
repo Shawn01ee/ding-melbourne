@@ -1,5 +1,5 @@
 import type { Difficulty, RouteData } from '../data/types';
-import { foldChar, isAnswerMatch } from './normalize';
+import { foldChar, isAnswerMatch, normalizeBase } from './normalize';
 
 /**
  * Deterministic game state machine (PRD §6).
@@ -117,8 +117,23 @@ export function targetText(state: GameState): string {
   const stop = state.route.stops[currentStopId(state)];
   // Keep the generated GTFS answer tiers backwards-compatible while exposing
   // two clear player-facing levels: short stop name or full intersection.
-  const answerTier = state.config.difficulty === 'standard' ? 'easy' : 'standard';
-  return stop.answers[answerTier][0];
+  if (state.config.difficulty !== 'standard') return stop.answers.standard[0];
+
+  const shortTarget = stop.answers.easy[0];
+  const matchingStops = currentDirection(state).stops
+    .map((stopId) => state.route.stops[stopId])
+    .filter((candidate) => normalizeBase(candidate.answers.easy[0]) === normalizeBase(shortTarget));
+  const distinctIntersections = new Set(
+    matchingStops.map((candidate) => normalizeBase(candidate.answers.standard[0])),
+  );
+
+  // Some real stops share a precinct/street name but sit on different roads,
+  // for example Route 1's two consecutive Arts Precinct platforms. Preserve
+  // both official stops while making the short typing targets unambiguous.
+  if (distinctIntersections.size > 1) {
+    return stop.answers.standard[0].replace(/\s*\/\s*/g, ' ');
+  }
+  return shortTarget;
 }
 
 function activeElapsed(state: GameState, at: number): number {
