@@ -29,10 +29,19 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
   const typingActive = state.phase === 'typing';
   const routeColor = state.route.route.color;
 
+  const focusInput = () => inputRef.current?.focus({ preventScroll: true });
+
   // Auto-focus when a stop opens for typing (AC-01) and keep focus per stop.
   useEffect(() => {
-    if (typingActive) inputRef.current?.focus();
+    if (typingActive) focusInput();
   }, [typingActive, state.stopIndex]);
+
+  // iOS may pan the whole layout before VisualViewport reports the keyboard.
+  // Activate the compact cockpit synchronously on focus so that the input is
+  // already in a safe position when Safari decides whether it must scroll.
+  useEffect(() => () => {
+    document.documentElement.classList.remove('typing-input-focused');
+  }, []);
 
   // 80ms micro-shake on new errors (PRD §6); disabled under reduced motion via CSS.
   useEffect(() => {
@@ -128,7 +137,7 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
           className={`stop-slot typing-stop${state.input ? ' has-progress' : ''}${
             typingActive && !focused ? ' unfocused' : ''
           }`}
-          onClick={() => inputRef.current?.focus()}
+          onClick={focusInput}
         >
           {current.stopNumber && (
             <span
@@ -176,8 +185,15 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
             inputMode="text"
             spellCheck={false}
             readOnly={!typingActive}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onFocus={() => {
+              setFocused(true);
+              document.documentElement.classList.add('typing-input-focused');
+              if (window.innerWidth <= 700) requestAnimationFrame(() => window.scrollTo(0, 0));
+            }}
+            onBlur={() => {
+              setFocused(false);
+              document.documentElement.classList.remove('typing-input-focused');
+            }}
             onChange={(e) => {
               // Dispatch every change, including mid-IME-composition updates:
               // freezing the controlled value here silently swallows composed input.

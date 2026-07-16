@@ -134,3 +134,9 @@
 - Kept the hidden input at 16px to prevent iOS focus zoom and added mobile keyboard hints while preserving continuous per-character input.
 - Added install/offline instructions to the README and phone-specific guidance to the in-app FAQ.
 - Verification: 76/76 tests and production build pass. Chromium validated 460px and 390px keyboard-visible heights with no overlap or horizontal overflow, continuous typing and forward tram motion, zero console/page errors, a valid install manifest, both icon sizes, active service worker, 24 cached route chunks, and offline loading of Route 109.
+
+## Continuation: iPhone Safari focus and keyboard scroll fix
+- A real iPhone Safari capture showed the browser panning the full desktop-style cockpit before VisualViewport had finished reporting the keyboard height. The compact layout therefore activated too late, leaving the console off-screen or forcing the player to scroll.
+- The compact mobile cockpit now activates synchronously whenever the typing input gains focus, independent of keyboard-height detection. Programmatic focus uses `preventScroll`, and late Safari document panning is reset during VisualViewport resize/scroll events.
+- Leaving the typing field removes the focus layout cleanly; keyboard-height detection remains as a fallback during viewport transitions.
+- Verification: reproduced the failed-auto-focus then user-tap path at the screenshot's approximate 360px width, forced a Safari-style page scroll, opened a 360×390 visible viewport, completed one stop and typed into the next, and confirmed the journey board, tram, stats, and target stayed visible with zero overlap, horizontal overflow, scroll drift, or console/page errors. All 76 tests and the production PWA build pass.

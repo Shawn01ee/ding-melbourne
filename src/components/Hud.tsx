@@ -62,7 +62,9 @@ export function Hud({ state, dispatch, theme, onToggleTheme }: HudProps) {
             if (!state.config.soundOn) primeAudio(true);
             dispatch({ type: 'TOGGLE_SOUND' });
             // Focus-restore exception button (PRD §6): act, then hand focus back.
-            document.querySelector<HTMLInputElement>('.ghost-input')?.focus();
+            document
+              .querySelector<HTMLInputElement>('.ghost-input')
+              ?.focus({ preventScroll: true });
           }}
         >
           <span aria-hidden="true">{state.config.soundOn ? '🔔' : '🔕'}</span>

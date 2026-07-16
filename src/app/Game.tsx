@@ -92,6 +92,12 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
       root.style.setProperty('--visual-viewport-offset-top', `${next.offsetTop}px`);
       root.style.setProperty('--keyboard-inset', `${next.keyboardInset}px`);
       root.classList.toggle('keyboard-open', next.keyboardOpen);
+      // Safari can pan the document late in its keyboard animation, even when
+      // focus({ preventScroll }) was used. The compact mobile cockpit already
+      // keeps the field visible, so any residual page scroll is unwanted.
+      if (focused && window.innerWidth <= 700 && window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
       setViewport((current) =>
         current.height === next.height &&
         current.width === next.width &&
@@ -297,7 +303,9 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
   const restoreFocus = (e: React.MouseEvent) => {
     const el = e.target as HTMLElement;
     if (el.closest('button, select, a, input, option')) return;
-    containerRef.current?.querySelector<HTMLInputElement>('.ghost-input')?.focus();
+    containerRef.current
+      ?.querySelector<HTMLInputElement>('.ghost-input')
+      ?.focus({ preventScroll: true });
   };
 
   if (state.phase === 'config' && infoPage)
