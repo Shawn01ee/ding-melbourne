@@ -1257,6 +1257,31 @@ kbd {
   letter-spacing: 0.14em;
 }
 
+/* Route header carries the Network map action on its right edge, giving that
+   route-related control a clear home instead of floating over the card. */
+.config-card legend.route-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+/* .config-card prefix beats theme.css's later .network-open base rule. */
+.config-card .route-network-open {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 0.66rem;
+  box-shadow: none;
+  backdrop-filter: none;
+  background: var(--cream);
+}
+
+.config-card .route-network-open:hover {
+  border-color: rgb(23 33 29 / 0.28);
+  background: #eef1ea;
+}
+
 .config-card .route-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;

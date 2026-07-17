@@ -91,10 +91,6 @@ export function ConfigScreen({
       </svg>
 
       <div className="config-utilities" aria-label="Display controls">
-        <button type="button" className="network-open" onClick={onOpenNetwork}>
-          <span aria-hidden="true">⌘</span>
-          <span>Network map</span>
-        </button>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
 
@@ -142,8 +138,14 @@ export function ConfigScreen({
 
       <section className="config-card" aria-label="Game setup">
         <fieldset>
-          <legend>
-            Route <span className="route-count">{routes.length} lines</span>
+          <legend className="route-legend">
+            <span>
+              Route <span className="route-count">{routes.length} lines</span>
+            </span>
+            <button type="button" className="network-open route-network-open" onClick={onOpenNetwork}>
+              <span aria-hidden="true">⌘</span>
+              <span>Network map</span>
+            </button>
           </legend>
           <div className="route-grid" role="radiogroup" aria-label="Route">
             {routes.map((summary) => {
