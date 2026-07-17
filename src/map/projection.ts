@@ -14,6 +14,12 @@ export interface ProjectedPath {
   pointsUpTo(p: number): { x: number; y: number }[];
 }
 
+export interface ProjectedPose {
+  x: number;
+  y: number;
+  angleDeg: number;
+}
+
 interface TracedPoint {
   x: number;
   y: number;
@@ -237,4 +243,31 @@ export function projectPathInFrame(
     x: framed[point.sourceIndex].x,
     y: framed[point.sourceIndex].y,
   })));
+}
+
+/**
+ * Sample the vehicle position at p while deriving its heading from a short
+ * centred chord. SVG animateMotion chooses one side of a polyline vertex,
+ * which can make the tram visibly snap or appear to turn back at tight CBD
+ * corners even though its position is still advancing.
+ */
+export function smoothPathPose(
+  path: ProjectedPath,
+  p: number,
+  headingWindow = 0.006,
+): ProjectedPose {
+  const progress = Math.min(Math.max(p, 0), 1);
+  const position = path.pointAt(progress);
+  const before = path.pointAt(Math.max(0, progress - headingWindow));
+  const after = path.pointAt(Math.min(1, progress + headingWindow));
+  const dx = after.x - before.x;
+  const dy = after.y - before.y;
+
+  return {
+    x: position.x,
+    y: position.y,
+    angleDeg: Math.hypot(dx, dy) > MIN_SEGMENT
+      ? (Math.atan2(dy, dx) * 180) / Math.PI
+      : position.angleDeg,
+  };
 }

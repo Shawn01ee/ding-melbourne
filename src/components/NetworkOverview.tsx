@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEve
 import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { inkForBackground } from '../brand';
-import { projectCoordinates, projectPathInFrame } from '../map/projection';
+import { projectCoordinates, projectPathInFrame, smoothPathPose } from '../map/projection';
 
 const VIEW_W = 1200;
 const VIEW_H = 700;
 const PADDING = 48;
+const PREVIEW_DURATION_MS = 14_000;
 
 type GeoPoint = [number, number];
 type ViewMode = 'network' | 'route';
@@ -69,7 +70,8 @@ const terminalName = (name: string) => name.split('/')[0].replace(/\s+#\d+$/, ''
 
 export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelect, onClose }: NetworkOverviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('network');
-  const movingTramRef = useRef<SVGAnimateMotionElement>(null);
+  const movingTramRef = useRef<SVGGElement>(null);
+  const previewFrameRef = useRef(0);
   const selectedRouteId = selectedRoute.route.id;
 
   useEffect(() => {
@@ -79,13 +81,6 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [onClose]);
-
-  // Route Focus is a one-way preview: start afresh whenever a route is
-  // selected, then remain at the destination instead of snapping back to the
-  // origin at the end of an infinite SMIL repeat.
-  useEffect(() => {
-    if (viewMode === 'route') movingTramRef.current?.beginElement();
-  }, [selectedRouteId, viewMode]);
 
   const geographicFrame = useMemo(() => routes.flatMap((route) => route.overviewShape), [routes]);
 
@@ -109,15 +104,51 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
 
   const selectedLine = lines.find(({ summary }) => summary.id === selectedRouteId) ?? lines[0];
   const selectedDirection = selectedRoute.route.directions[0];
-  const selectedFocusPoints = useMemo(() => projectPathInFrame(
+  const selectedFocusPath = useMemo(() => projectPathInFrame(
     selectedDirection.shape,
     geographicFrame,
     VIEW_W,
     VIEW_H,
     PADDING,
-  ).points,
+  ),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [selectedDirection, geographicFrame]);
+  const selectedFocusPoints = selectedFocusPath.points;
+  const initialTramPose = smoothPathPose(selectedFocusPath, 0);
+
+  // Drive the preview with one monotonic progress value. Native SVG
+  // animateMotion can select the wrong tangent at a polyline corner and can
+  // restart independently of React; controlling both position and heading
+  // here prevents the visible forward-then-backward jump on complex routes.
+  useEffect(() => {
+    cancelAnimationFrame(previewFrameRef.current);
+    if (viewMode !== 'route') return;
+
+    const tram = movingTramRef.current;
+    if (!tram) return;
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const startedAt = performance.now();
+
+    const renderPose = (progress: number) => {
+      const pose = smoothPathPose(selectedFocusPath, progress);
+      tram.setAttribute('transform', `translate(${pose.x} ${pose.y}) rotate(${pose.angleDeg})`);
+      tram.dataset.previewProgress = progress.toFixed(6);
+    };
+
+    if (reducedMotion) {
+      renderPose(1);
+      return;
+    }
+
+    renderPose(0);
+    const step = (now: number) => {
+      const progress = Math.min(1, Math.max(0, (now - startedAt) / PREVIEW_DURATION_MS));
+      renderPose(progress);
+      if (progress < 1) previewFrameRef.current = requestAnimationFrame(step);
+    };
+    previewFrameRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(previewFrameRef.current);
+  }, [selectedFocusPath, selectedRouteId, viewMode]);
   const selectedStops = useMemo(() => {
     const coordinates = selectedDirection.stops.map((stopId) => {
       const stop = selectedRoute.stops[stopId];
@@ -256,21 +287,17 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
                 {selectedStops.map(({ stop, point }, index) => (
                   <circle key={`${stop.stopNumber ?? index}-${index}`} cx={point.x} cy={point.y} r={index === 0 || index === selectedStops.length - 1 ? 6 : 2.8} />
                 ))}
-                <g className="network-moving-tram" filter="url(#network-tram-shadow)">
+                <g
+                  ref={movingTramRef}
+                  className="network-moving-tram"
+                  filter="url(#network-tram-shadow)"
+                  transform={`translate(${initialTramPose.x} ${initialTramPose.y}) rotate(${initialTramPose.angleDeg})`}
+                  data-preview-progress="0.000000"
+                >
                   <rect x="-13" y="-7" width="26" height="14" rx="5" />
                   <rect x="-7" y="-4" width="5" height="5" rx="1" className="network-tram-window" />
                   <rect x="2" y="-4" width="5" height="5" rx="1" className="network-tram-window" />
                   <circle cx="-7" cy="7" r="2" /><circle cx="7" cy="7" r="2" />
-                  <animateMotion
-                    key={selectedRouteId}
-                    ref={movingTramRef}
-                    begin="indefinite"
-                    dur="14s"
-                    repeatCount="1"
-                    fill="freeze"
-                    rotate="auto"
-                    path={pathData(selectedFocusPoints)}
-                  />
                 </g>
                 <g className="network-terminal-label" transform={`translate(${firstStop.point.x} ${firstStop.point.y})`}>
                   <rect x={firstLabel.x} y="-40" width={firstLabel.width} height="27" rx="10" />

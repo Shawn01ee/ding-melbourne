@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RouteData } from '../src/data/types';
 import { stopProgress } from '../src/data/types';
-import { projectCoordinates, projectPath, projectPathInFrame } from '../src/map/projection';
+import { projectCoordinates, projectPath, projectPathInFrame, smoothPathPose } from '../src/map/projection';
 
 const generatedRoutes = Object.values(
   import.meta.glob<RouteData>('../src/data/generated/route-*.json', {
@@ -80,6 +80,35 @@ describe('shared map projection', () => {
 
       expect(clean.points.length, `Route ${shortName} preview cleanup`).toBeLessThan(raw.length);
       expect(clean.points).toHaveLength(projectPath(shape, 1200, 700, 48).points.length);
+    }
+  });
+
+  it('keeps the focused preview pose moving forward with a stable centred heading', () => {
+    const networkFrame = generatedRoutes.flatMap((candidate) => candidate.route.directions[0].shape);
+
+    for (const shortName of ['12', '57', '59', '96']) {
+      const route = generatedRoutes.find((candidate) => candidate.route.shortName === shortName)!;
+      const path = projectPathInFrame(
+        route.route.directions[0].shape,
+        networkFrame,
+        1200,
+        700,
+        48,
+      );
+      const samples = Array.from({ length: 201 }, (_, index) => smoothPathPose(path, index / 200));
+
+      expect(samples[0].x).toBeCloseTo(path.pointAt(0).x);
+      expect(samples[0].y).toBeCloseTo(path.pointAt(0).y);
+      expect(samples.at(-1)?.x).toBeCloseTo(path.pointAt(1).x);
+      expect(samples.at(-1)?.y).toBeCloseTo(path.pointAt(1).y);
+      for (let index = 1; index < samples.length; index++) {
+        const previous = samples[index - 1];
+        const current = samples[index];
+        expect(
+          Math.hypot(current.x - previous.x, current.y - previous.y),
+          `Route ${shortName} preview sample ${index}`,
+        ).toBeGreaterThan(0);
+      }
     }
   });
 
