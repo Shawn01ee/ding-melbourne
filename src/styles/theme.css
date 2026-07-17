@@ -12,11 +12,12 @@
 .config-utilities {
   position: fixed;
   z-index: 50;
-  top: 22px;
-  right: 24px;
+  top: clamp(20px, 2.4vw, 30px);
+  left: clamp(20px, 2.4vw, 30px);
+  right: auto;
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 12px;
   isolation: isolate;
 }
 
@@ -597,8 +598,8 @@ html[data-theme='night'] .result-screen::before { background: rgb(3 12 18 / 0.35
 }
 
 @media (max-width: 700px) {
-  .config-screen { padding-top: 88px; }
-  .config-utilities { top: 18px; right: 18px; }
+  .config-screen { padding-top: 72px; }
+  .config-utilities { top: 16px; right: 16px; left: auto; }
   .network-open > span:last-child { display: none; }
   .network-open { width: 44px; justify-content: center; padding: 4px; }
   .config-hero h1 {

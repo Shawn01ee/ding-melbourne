@@ -1089,22 +1089,21 @@ kbd {
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.55;
+  /* A calm whisper behind the content — was a muddy tangle at higher opacity. */
+  opacity: 0.28;
 }
 
 .config-network path {
   fill: none;
-  stroke: #d7ded8;
-  stroke-width: 13;
+  stroke: #dfe4de;
+  stroke-width: 8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.config-network path:nth-child(1) { stroke: color-mix(in srgb, var(--route-color) 22%, #d7ded8); }
-.config-network path:nth-child(2) { stroke: #dce7ea; }
-.config-network path:nth-child(3) { stroke: #e8ddd4; }
-.config-network path:nth-child(4) { stroke: #dcd8e5; }
-.config-network path:nth-child(5) { stroke: #d5e6df; }
+/* One faint tint of the selected line, the rest a uniform neutral, so the
+   backdrop reads as texture rather than competing colours. */
+.config-network path:nth-child(1) { stroke: color-mix(in srgb, var(--route-color) 16%, #dfe4de); }
 
 .config-hero {
   position: relative;
