@@ -1256,6 +1256,63 @@ kbd {
   letter-spacing: 0.14em;
 }
 
+/* Guided 3-step flow: Pick a line -> Set up your run -> Ring the bell. */
+.config-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-step + .config-step {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--cockpit-green);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.step-title {
+  font-weight: 800;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+
+.step-meta {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Network map sits at the far right of step 1; run summary at the right of step 3. */
+.step-head .route-network-open,
+.config-step-go .step-meta {
+  margin-left: auto;
+}
+
+.config-step-go .step-meta {
+  text-align: right;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
 /* Route header carries the Network map action on its right edge, giving that
    route-related control a clear home instead of floating over the card. */
 .config-card legend.route-legend {
@@ -1284,7 +1341,7 @@ kbd {
 .config-card .route-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
-  max-height: 278px;
+  max-height: 232px;
   padding: 3px 5px 3px 3px;
   overflow-y: auto;
   overscroll-behavior: contain;

@@ -137,17 +137,23 @@ export function ConfigScreen({
       </header>
 
       <section className="config-card" aria-label="Game setup">
-        <fieldset>
-          <legend className="route-legend">
-            <span>
-              Route <span className="route-count">{routes.length} lines</span>
-            </span>
-            <button type="button" className="network-open route-network-open" onClick={onOpenNetwork}>
+        <div className="config-step">
+          <div className="step-head">
+            <span className="step-badge">1</span>
+            <span className="step-title">Pick a line</span>
+            <span className="step-meta">{routes.length} lines</span>
+            <button
+              type="button"
+              className="network-open route-network-open"
+              onClick={onOpenNetwork}
+            >
               <span aria-hidden="true">⌘</span>
               <span>Network map</span>
             </button>
-          </legend>
-          <div className="route-grid" role="radiogroup" aria-label="Route">
+          </div>
+          <fieldset>
+            <legend className="sr-only">Route</legend>
+            <div className="route-grid" role="radiogroup" aria-label="Route">
             {routes.map((summary) => {
               const selected = summary.id === route.route.id;
               const loading = loadingRouteId === summary.id;
@@ -179,13 +185,19 @@ export function ConfigScreen({
                 </button>
               );
             })}
+            </div>
+          </fieldset>
+          {routeLoadError && <p className="route-load-error" role="alert">{routeLoadError}</p>}
+        </div>
+
+        <div className="config-step">
+          <div className="step-head">
+            <span className="step-badge">2</span>
+            <span className="step-title">Set up your run</span>
           </div>
-        </fieldset>
 
-        {routeLoadError && <p className="route-load-error" role="alert">{routeLoadError}</p>}
-
-        <fieldset>
-          <legend>Direction</legend>
+          <fieldset>
+            <legend>Direction</legend>
           <div className="option-row" role="radiogroup" aria-label="Direction">
             {route.route.directions.map((dir) => (
               <button
@@ -264,24 +276,33 @@ export function ConfigScreen({
             </div>
           </fieldset>
 
-          <fieldset className="sound-field">
-            <legend>Sound</legend>
-            <button
-              type="button"
-              className="option sound-option"
-              aria-pressed={config.soundOn}
-              onClick={() => dispatch({ type: 'CONFIGURE', patch: { soundOn: !config.soundOn } })}
-            >
-              {config.soundOn ? '🔔 Bell on' : '🔕 Bell off'}
-            </button>
-          </fieldset>
+            <fieldset className="sound-field">
+              <legend>Sound</legend>
+              <button
+                type="button"
+                className="option sound-option"
+                aria-pressed={config.soundOn}
+                onClick={() => dispatch({ type: 'CONFIGURE', patch: { soundOn: !config.soundOn } })}
+              >
+                {config.soundOn ? '🔔 Bell on' : '🔕 Bell off'}
+              </button>
+            </fieldset>
+          </div>
         </div>
 
-        <button type="button" className="start-button" onClick={start}>
-          <span>RING TO START</span>
-          <span aria-hidden="true">→</span>
-        </button>
-        <p className="start-hint">Route {route.route.shortName} · {direction.headsign} · {startableStops.length + 1} stops</p>
+        <div className="config-step config-step-go">
+          <div className="step-head">
+            <span className="step-badge">3</span>
+            <span className="step-title">Ring the bell</span>
+            <span className="step-meta">
+              Route {route.route.shortName} · {direction.headsign} · {startableStops.length + 1} stops
+            </span>
+          </div>
+          <button type="button" className="start-button" onClick={start}>
+            <span>RING TO START</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
       </section>
 
       <footer className="config-footer">
