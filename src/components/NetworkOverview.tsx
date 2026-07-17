@@ -53,7 +53,7 @@ const CBD_BLOCKS = [
 const PLACE_LABELS = [
   ['AIRPORT WEST', 144.88, -37.72], ['COBURG', 144.965, -37.735],
   ['PRESTON', 145.025, -37.735], ['BUNDOORA', 145.085, -37.69],
-  ['FOOTSCRAY', 144.895, -37.80], ['DOCKLANDS', 144.94, -37.815],
+  ['FOOTSCRAY', 144.895, -37.80], ['DOCKLANDS', 144.918, -37.824],
   ['MELBOURNE CBD', 144.968, -37.815], ['RICHMOND', 145.03, -37.825],
   ['KEW', 145.055, -37.795], ['BOX HILL', 145.12, -37.82],
   ['ST KILDA', 144.98, -37.87], ['MALVERN', 145.04, -37.86],
@@ -249,12 +249,6 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
               {mapContext.parks.map((park, index) => <path key={`park-${index}`} d={pathData(park, true)} className="network-park" />)}
               {mapContext.cbd.map((street, index) => <path key={`street-${index}`} d={pathData(street)} className="network-cbd-street" />)}
               {mapContext.rivers.map((river, index) => <path key={`river-${index}`} d={pathData(river)} className="network-river" />)}
-              {mapContext.labels.map(({ label, point }) => (
-                <text key={label} x={point.x} y={point.y} className={label === 'MELBOURNE CBD' ? 'network-place-label city' : 'network-place-label'}>{label}</text>
-              ))}
-              <text x="1040" y="636" className="network-map-compass">N ↑</text>
-              <text x="935" y="675" className="network-water-label">PORT PHILLIP BAY</text>
-              <text x="745" y="390" className="network-river-label">YARRA RIVER</text>
             </g>
 
             {lines.map(({ summary, points: line }) => {
@@ -281,6 +275,35 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
                 </g>
               );
             })}
+
+            {/* Place names sit ON TOP of the route tangle so the dense CBD stays
+                readable; the city label gets a paper pill for extra contrast. */}
+            <g className="network-labels" aria-hidden="true">
+              {mapContext.labels.map(({ label, point }) => {
+                if (label === 'MELBOURNE CBD') {
+                  const w = 150;
+                  return (
+                    <g key={label}>
+                      <rect
+                        className="network-city-pill"
+                        x={point.x - w / 2}
+                        y={point.y - 15}
+                        width={w}
+                        height={23}
+                        rx={8}
+                      />
+                      <text x={point.x} y={point.y} className="network-place-label city">{label}</text>
+                    </g>
+                  );
+                }
+                return (
+                  <text key={label} x={point.x} y={point.y} className="network-place-label">{label}</text>
+                );
+              })}
+              <text x="1040" y="636" className="network-map-compass">N ↑</text>
+              <text x="935" y="675" className="network-water-label">PORT PHILLIP BAY</text>
+              <text x="745" y="390" className="network-river-label">YARRA RIVER</text>
+            </g>
 
             {viewMode === 'route' && (
               <g className="network-selected-stops" aria-hidden="true">

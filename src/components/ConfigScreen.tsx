@@ -90,10 +90,6 @@ export function ConfigScreen({
         <path d="M-70 470 L280 305 L620 315 L910 590 L1450 690" />
       </svg>
 
-      <div className="config-utilities" aria-label="Display controls">
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-      </div>
-
       <header className="config-hero">
         <p className="config-kicker">Melbourne tram typing game</p>
         <p className="brand config-brand">
@@ -142,14 +138,17 @@ export function ConfigScreen({
             <span className="step-badge">1</span>
             <span className="step-title">Pick a line</span>
             <span className="step-meta">{routes.length} lines</span>
-            <button
-              type="button"
-              className="network-open route-network-open"
-              onClick={onOpenNetwork}
-            >
-              <span aria-hidden="true">⌘</span>
-              <span>Network map</span>
-            </button>
+            <div className="step-head-actions">
+              <button
+                type="button"
+                className="network-open route-network-open"
+                onClick={onOpenNetwork}
+              >
+                <span aria-hidden="true">⌘</span>
+                <span>Network map</span>
+              </button>
+              <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+            </div>
           </div>
           <fieldset>
             <legend className="sr-only">Route</legend>

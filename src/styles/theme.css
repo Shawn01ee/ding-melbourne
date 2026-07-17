@@ -212,14 +212,15 @@
 }
 
 .network-place-label {
-  fill: var(--muted);
+  fill: var(--charcoal);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-anchor: middle;
+  /* A thicker paper halo lets suburb names punch through the route tangle. */
   paint-order: stroke;
   stroke: var(--map-paper);
-  stroke-width: 4px;
+  stroke-width: 5.5px;
   stroke-linejoin: round;
 }
 
@@ -227,6 +228,15 @@
   fill: var(--charcoal);
   font-size: 15px;
   font-weight: 900;
+  stroke-width: 3px;
+}
+
+/* Paper pill behind the CBD label so it reads over the densest cluster. */
+.network-city-pill {
+  fill: var(--map-paper);
+  opacity: 0.9;
+  stroke: rgb(23 33 29 / 0.14);
+  stroke-width: 1;
 }
 
 .network-water-label,
@@ -298,7 +308,7 @@
   cursor: default;
 }
 .network-overview-map.route-focus .network-geography { opacity: 0.72; }
-.network-overview-map.route-focus .network-place-label,
+.network-overview-map.route-focus .network-labels,
 .network-overview-map.route-focus .network-water-label,
 .network-overview-map.route-focus .network-river-label,
 .network-overview-map.route-focus .network-map-compass { opacity: 0.14; }

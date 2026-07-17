@@ -1301,10 +1301,32 @@ kbd {
   text-transform: uppercase;
 }
 
-/* Network map sits at the far right of step 1; run summary at the right of step 3. */
-.step-head .route-network-open,
+/* Network map + theme toggle sit together at the far right of step 1;
+   run summary at the right of step 3. */
+.step-head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .config-step-go .step-meta {
   margin-left: auto;
+}
+
+/* Match the toggle to the card's lighter in-header controls. */
+.config-card .step-head-actions .theme-toggle {
+  min-height: 32px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* On narrow screens drop the "24 lines" meta so step 1's title + controls
+   stay on one line. */
+@media (max-width: 700px) {
+  .config-step:not(.config-step-go) .step-head .step-meta {
+    display: none;
+  }
 }
 
 .config-step-go .step-meta {
