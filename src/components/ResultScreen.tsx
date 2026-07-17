@@ -6,6 +6,7 @@ import { accuracyOf, elapsedMs, formatClock, scoreOf, totalRunStops, wpmOf } fro
 import { RouteCanvas } from '../map/RouteCanvas';
 import { isBetter, loadBest, pbKey, saveBest, type PersonalBest } from '../storage/local';
 import type { ColorTheme } from '../storage/local';
+import { drawResultCard } from '../share/resultCard';
 import { ThemeToggle } from './ThemeToggle';
 
 interface ResultScreenProps {
@@ -50,15 +51,60 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme }: 
   const rank = driverRank(result.accuracy, result.wpm, completed);
   const [shareLabel, setShareLabel] = useState('SHARE RESULT');
 
+  const modeLabel =
+    state.config.mode === 'sprint'
+      ? '60s Sprint'
+      : state.config.mode === 'section'
+        ? '10-Stop Section'
+        : 'Full Route';
+
   const shareResult = async () => {
-    const text = `DING! MELBOURNE · Route ${state.route.route.shortName} · ${result.score} points · ${result.wpm.toFixed(1)} WPM · ${result.accuracy.toFixed(1)}% accuracy`;
+    const text = `DING! MELBOURNE · Route ${state.route.route.shortName} · ${rank} · ${result.score} points · ${result.wpm.toFixed(1)} WPM · ${result.accuracy.toFixed(1)}% accuracy`;
+    const shareUrl = location.origin + location.pathname;
+
+    let file: File | null = null;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'DING! MELBOURNE', text, url: location.href });
-      } else {
-        await navigator.clipboard.writeText(`${text} · ${location.href}`);
-        setShareLabel('RESULT COPIED');
+      const blob = await drawResultCard({
+        routeShort: state.route.route.shortName,
+        routeLong: state.route.route.longName,
+        routeColor: state.route.route.color,
+        headsign: direction.headsign,
+        modeLabel,
+        rank,
+        outcome: completed ? 'Service complete' : "Time's up",
+        isNew,
+        metrics: [
+          { label: sprint ? 'Stops' : 'Clear time', value: sprint ? String(result.stops) : formatClock(result.timeMs) },
+          { label: 'WPM', value: result.wpm.toFixed(0) },
+          { label: 'Accuracy', value: `${result.accuracy.toFixed(0)}%` },
+          { label: 'Score', value: String(result.score) },
+        ],
+      });
+      file = new File([blob], 'ding-melbourne-result.png', { type: 'image/png' });
+    } catch {
+      /* image generation failed — fall back to a text/link share */
+    }
+
+    try {
+      if (file && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'DING! MELBOURNE', text });
+        return;
       }
+      if (navigator.share) {
+        await navigator.share({ title: 'DING! MELBOURNE', text, url: shareUrl });
+        return;
+      }
+      // Desktop without Web Share: download the image and copy the link.
+      if (file) {
+        const href = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(href);
+      }
+      await navigator.clipboard?.writeText(`${text} · ${shareUrl}`);
+      setShareLabel(file ? 'IMAGE SAVED · LINK COPIED' : 'RESULT COPIED');
     } catch {
       // Cancelling the native share sheet should leave the result screen alone.
     }
