@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RouteData } from '../src/data/types';
 import { stopProgress } from '../src/data/types';
-import { projectCoordinates, projectPath } from '../src/map/projection';
+import { projectCoordinates, projectPath, projectPathInFrame } from '../src/map/projection';
 
 const generatedRoutes = Object.values(
   import.meta.glob<RouteData>('../src/data/generated/route-*.json', {
@@ -56,6 +56,31 @@ describe('shared map projection', () => {
     expect(points[0].x).toBeLessThan(activePoints[1].x);
     expect(points[1].x).toBeGreaterThan(activePoints[1].x);
     expect(points[1].y).toBeLessThan(activePoints[1].y);
+  });
+
+  it('cleans a route in its own scale before placing it in a shared network frame', () => {
+    const route = generatedRoutes.find((candidate) => candidate.route.shortName === '59')!;
+    const shape = route.route.directions[0].shape;
+    const networkFrame = generatedRoutes.flatMap((candidate) => candidate.route.directions[0].shape);
+    const local = projectPath(shape, 1200, 700, 48);
+    const shared = projectPathInFrame(shape, networkFrame, 1200, 700, 48);
+
+    expect(shared.points).toHaveLength(local.points.length);
+    expect(shared.points.length).toBeLessThan(shape.length);
+  });
+
+  it('removes the known first-direction retraces from network previews', () => {
+    const networkFrame = generatedRoutes.flatMap((candidate) => candidate.route.directions[0].shape);
+
+    for (const shortName of ['12', '57', '59', '96']) {
+      const route = generatedRoutes.find((candidate) => candidate.route.shortName === shortName)!;
+      const shape = route.route.directions[0].shape;
+      const raw = projectCoordinates(shape, networkFrame, 1200, 700, 48);
+      const clean = projectPathInFrame(shape, networkFrame, 1200, 700, 48);
+
+      expect(clean.points.length, `Route ${shortName} preview cleanup`).toBeLessThan(raw.length);
+      expect(clean.points).toHaveLength(projectPath(shape, 1200, 700, 48).points.length);
+    }
   });
 
   it('erases overshoot-and-return spikes while keeping progress forward', () => {

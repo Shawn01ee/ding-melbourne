@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { inkForBackground } from '../brand';
-import { projectCoordinates } from '../map/projection';
+import { projectCoordinates, projectPathInFrame } from '../map/projection';
 
 const VIEW_W = 1200;
 const VIEW_H = 700;
@@ -69,6 +69,7 @@ const terminalName = (name: string) => name.split('/')[0].replace(/\s+#\d+$/, ''
 
 export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelect, onClose }: NetworkOverviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('network');
+  const movingTramRef = useRef<SVGAnimateMotionElement>(null);
   const selectedRouteId = selectedRoute.route.id;
 
   useEffect(() => {
@@ -79,12 +80,28 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [onClose]);
 
+  // Route Focus is a one-way preview: start afresh whenever a route is
+  // selected, then remain at the destination instead of snapping back to the
+  // origin at the end of an infinite SMIL repeat.
+  useEffect(() => {
+    if (viewMode === 'route') movingTramRef.current?.beginElement();
+  }, [selectedRouteId, viewMode]);
+
   const geographicFrame = useMemo(() => routes.flatMap((route) => route.overviewShape), [routes]);
 
   const project = (shape: GeoPoint[]) => projectCoordinates(shape, geographicFrame, VIEW_W, VIEW_H, PADDING);
 
   const lines = useMemo(() => routes
-    .map((summary) => ({ summary, points: project(summary.overviewShape) }))
+    .map((summary) => ({
+      summary,
+      points: projectPathInFrame(
+        summary.overviewShape,
+        geographicFrame,
+        VIEW_W,
+        VIEW_H,
+        PADDING,
+      ).points,
+    }))
     .sort((a, b) => Number(a.summary.id === selectedRouteId) - Number(b.summary.id === selectedRouteId)),
   // The shared frame is derived from routes and changes with the same dependency.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,7 +109,13 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
 
   const selectedLine = lines.find(({ summary }) => summary.id === selectedRouteId) ?? lines[0];
   const selectedDirection = selectedRoute.route.directions[0];
-  const selectedFocusPoints = useMemo(() => project(selectedDirection.shape),
+  const selectedFocusPoints = useMemo(() => projectPathInFrame(
+    selectedDirection.shape,
+    geographicFrame,
+    VIEW_W,
+    VIEW_H,
+    PADDING,
+  ).points,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [selectedDirection, geographicFrame]);
   const selectedStops = useMemo(() => {
@@ -205,14 +228,21 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
 
             {lines.map(({ summary, points: line }) => {
               const selected = summary.id === selectedRouteId;
+              const renderedLine = viewMode === 'route' && selected ? selectedFocusPoints : line;
               return (
-                <g key={summary.id} className={selected ? 'network-line selected' : 'network-line'}>
-                  <title>Route {summary.shortName} · {summary.longName}</title>
-                  <polyline className="network-line-hit" points={points(line)} onClick={() => void selectForPreview(summary)} />
-                  <polyline className="network-line-casing" points={points(line)} />
+                <g
+                  key={summary.id}
+                  className={selected ? 'network-line selected' : 'network-line'}
+                  data-route-id={summary.id}
+                >
+                  {(viewMode === 'network' || selected) && (
+                    <title>Route {summary.shortName} · {summary.longName}</title>
+                  )}
+                  <polyline className="network-line-hit" points={points(renderedLine)} onClick={() => void selectForPreview(summary)} />
+                  <polyline className="network-line-casing" points={points(renderedLine)} />
                   <polyline
                     className="network-line-color"
-                    points={points(line)}
+                    points={points(renderedLine)}
                     stroke={summary.color}
                     style={{ '--network-color': summary.color } as CSSProperties}
                     onClick={() => void selectForPreview(summary)}
@@ -231,7 +261,16 @@ export function NetworkOverview({ routes, selectedRoute, loadingRouteId, onSelec
                   <rect x="-7" y="-4" width="5" height="5" rx="1" className="network-tram-window" />
                   <rect x="2" y="-4" width="5" height="5" rx="1" className="network-tram-window" />
                   <circle cx="-7" cy="7" r="2" /><circle cx="7" cy="7" r="2" />
-                  <animateMotion dur="14s" repeatCount="indefinite" rotate="auto" path={pathData(selectedFocusPoints)} />
+                  <animateMotion
+                    key={selectedRouteId}
+                    ref={movingTramRef}
+                    begin="indefinite"
+                    dur="14s"
+                    repeatCount="1"
+                    fill="freeze"
+                    rotate="auto"
+                    path={pathData(selectedFocusPoints)}
+                  />
                 </g>
                 <g className="network-terminal-label" transform={`translate(${firstStop.point.x} ${firstStop.point.y})`}>
                   <rect x={firstLabel.x} y="-40" width={firstLabel.width} height="27" rx="10" />

@@ -291,6 +291,11 @@
 }
 
 .network-overview-map.route-focus .network-line:not(.selected) { opacity: 0.08; }
+.network-overview-map.route-focus .network-line:not(.selected) .network-line-hit,
+.network-overview-map.route-focus .network-line:not(.selected) .network-line-color {
+  pointer-events: none;
+  cursor: default;
+}
 .network-overview-map.route-focus .network-geography { opacity: 0.72; }
 .network-overview-map.route-focus .network-place-label,
 .network-overview-map.route-focus .network-water-label,

@@ -17,6 +17,8 @@ export interface ProjectedPath {
 interface TracedPoint {
   x: number;
   y: number;
+  /** Index of this vertex in the uncleaned source shape. */
+  sourceIndex: number;
   /** Arc-length fraction at this vertex before geometry cleanup. */
   sourceProgress: number;
 }
@@ -85,6 +87,7 @@ function sanitiseGeometry(points: { x: number; y: number }[]): TracedPoint[] {
 
   const traced = points.map((point, index) => ({
     ...point,
+    sourceIndex: index,
     sourceProgress: total > 0 ? sourceArcs[index] / total : 0,
   }));
   const clean: TracedPoint[] = [];
@@ -210,4 +213,28 @@ export function projectPath(
 ): ProjectedPath {
   const projected = projectCoordinates(shape, shape, width, height, padding);
   return createPath(sanitiseGeometry(projected));
+}
+
+/**
+ * Project a cleaned path through a larger shared geographic frame.
+ *
+ * Cleanup is deliberately decided in the route's own fitted frame. If it ran
+ * after fitting the whole Melbourne network, short retraces on compact routes
+ * would shrink below the pixel thresholds and reappear in route previews.
+ */
+export function projectPathInFrame(
+  shape: [number, number][],
+  referenceShape: [number, number][],
+  width: number,
+  height: number,
+  padding: number,
+): ProjectedPath {
+  const fitted = projectCoordinates(shape, shape, width, height, padding);
+  const clean = sanitiseGeometry(fitted);
+  const framed = projectCoordinates(shape, referenceShape, width, height, padding);
+  return createPath(clean.map((point) => ({
+    ...point,
+    x: framed[point.sourceIndex].x,
+    y: framed[point.sourceIndex].y,
+  })));
 }
