@@ -228,11 +228,12 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
   },
   privacy: {
     eyebrow: 'Privacy notice',
-    title: 'Your run stays on this device',
-    lede: 'DING! MELBOURNE currently has no accounts, advertising, analytics SDK, cloud profile, or server-backed leaderboard.',
+    title: 'You choose what leaves this device',
+    lede: 'DING! MELBOURNE plays with no ads, analytics SDK, or trackers. Signing in is optional and only powers the online leaderboard. Last updated 18 Jul 2026.',
     content: (
       <>
-        <Section title="What is stored locally">
+        <Section title="Local-only by default">
+          <p>Without signing in, the game keeps a few items in this browser’s <code>localStorage</code> and never uploads them:</p>
           <div className="info-table-wrap">
             <table>
               <thead><tr><th>Browser item</th><th>Why it is kept</th></tr></thead>
@@ -243,11 +244,37 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
               </tbody>
             </table>
           </div>
-          <p>This data is written to <code>localStorage</code> in the current browser. The game does not upload it or use it to identify you.</p>
+          <p>Clear this site’s data in your browser to remove them. Private browsing or restricted storage may prevent results from being retained.</p>
         </Section>
-        <Section title="Your controls">
-          <p>Clear this site’s data in your browser settings to remove all saved preferences and personal bests. Private browsing or restricted storage may prevent results from being retained.</p>
-          <Note title="No hidden login state">Because the current release has no account system, there is no separate cloud copy to request, export, or delete.</Note>
+        <Section title="If you sign in (optional)">
+          <p>Signing in is needed only to post scores to the public leaderboard. You can use Google, or an email magic link — either way we never receive a password.</p>
+          <div className="info-table-wrap">
+            <table>
+              <thead><tr><th>Collected when signed in</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td>Account id and email address</td><td>Identify your account and send the magic-link sign-in email.</td></tr>
+                <tr><td>Google profile name and avatar (Google sign-in only)</td><td>Suggest a starting display name and picture.</td></tr>
+                <tr><td>The display name you choose</td><td>Shown publicly next to your leaderboard entries.</td></tr>
+                <tr><td>Run records (route, mode, difficulty, time, WPM, accuracy, score, date)</td><td>Rank runs on the public leaderboard.</td></tr>
+                <tr><td>Sign-in session token</td><td>Kept in this browser so you stay signed in.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Your chosen display name and submitted run records are <strong>public</strong> to anyone viewing the leaderboard.</p>
+        </Section>
+        <Section title="Who processes this data">
+          <ul className="info-list">
+            <li><strong>Supabase</strong> (Supabase Inc.) hosts the sign-in and the leaderboard database on our behalf.</li>
+            <li><strong>Google</strong> processes the sign-in only when you choose “Sign in with Google”.</li>
+          </ul>
+          <p>These providers may store data on servers outside your country. The game uses no advertising, analytics, or third-party tracking.</p>
+        </Section>
+        <Section title="Keeping and deleting your data">
+          <p>Leaderboard records are kept until you remove them, delete your account, or a scheduled leaderboard reset clears the board. Account data is kept until you delete your account.</p>
+          <Note title="Your controls">Sign out any time, ask us to delete your account and records, or clear this site’s browser data to remove local preferences and bests. Contact <a href="mailto:leesmofficial01@gmail.com">leesmofficial01@gmail.com</a>.</Note>
+        </Section>
+        <Section title="Security and younger players">
+          <p>Traffic is served over HTTPS. Leaderboard rows are write-protected by database row-level security and validated on the server, so the browser cannot post scores directly. If you are under the age of consent in your country, please play without signing in.</p>
         </Section>
       </>
     ),
@@ -261,9 +288,13 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
         <Section title="Using the game">
           <ul className="info-list">
             <li>Use the site for personal play, learning, demonstration, and classroom practice.</li>
-            <li>Do not interfere with the service, attempt unauthorised access, or submit automated results as human play if public rankings are added later.</li>
+            <li>Do not interfere with the service or attempt unauthorised access.</li>
             <li>Do not present the project, its original artwork, or its interface as an official Transport Victoria or Yarra Trams product.</li>
           </ul>
+        </Section>
+        <Section title="Accounts and the leaderboard">
+          <p>Signing in is optional and only enables the public leaderboard. Choose a display name suitable for a public board, and post only your own genuine play.</p>
+          <p>Automated input, scripts, shared answers, or tampering may have records removed and the account suspended. We may also reset the board or adjust rankings to keep them fair. You can delete your account and records at any time.</p>
         </Section>
         <Section title="No journey-planning warranty">
           <p>The game may simplify, merge, shorten, or rearrange public transport data for play. It does not provide live disruption advice, accessibility information, fares, timetables, or a safe walking route.</p>
