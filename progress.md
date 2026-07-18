@@ -1,3 +1,5 @@
+Original prompt: Build and keep iterating on the DING! MELBOURNE tram typing game from the supplied design and behaviour references without copying proprietary assets.
+
 # DING! MELBOURNE development progress
 
 ## Goal
@@ -167,3 +169,13 @@
 - Removed native `animateMotion` from Network Route Focus. A single requestAnimationFrame loop now advances an explicitly clamped 0→1 progress value once, derives position from the cleaned displayed rail, derives heading from a centred path chord, and freezes at the destination. The DOM exposes `data-preview-progress` for direct runtime regression sampling.
 - Added named 201-sample pose coverage for Routes 12, 57, 59, and 96. All 83 tests, the production PWA build, bundled-code inspection, and `git diff --check` pass; the production bundle contains the controlled preview and no `animateMotion` element.
 - Browser screenshot verification remains pending because the local server permission request was rejected after the execution environment reached its external-action usage limit. Do not bypass that restriction; rerun the bundled web-game client and inspect all four route captures when browser execution is available.
+
+## Continuation: account UI hardening, Route 16, and multiplayer planning
+- Continued from the existing optional Supabase account implementation rather than duplicating it. Login and Driver profile modals now contain focus, restore focus on close, lock background scroll, report provider/save/delete failures in the dialog, and prevent duplicate async actions.
+- Supabase auth helpers now propagate provider errors; a temporarily unavailable backend no longer creates an unhandled initial-auth rejection or blocks the local game.
+- Diagnosed Route 16's Melbourne University direction: the GTFS shape leaves the Kew boarding stop, travels west, returns to the same terminus, and only then follows the first passenger hop. Cleanup now scales retrace endpoint proximity by median source spacing, removing only the 36-point initial out-and-back while leaving the opposite direction unchanged.
+- Added a Route 16 regression that samples the full first in-game hop and requires every step to advance toward stop two.
+- Replaced stale no-account copy and documentation. `docs/BACKEND.md` is now the production connection/checklist guide and `docs/MULTIPLAYER.md` defines Ghost Challenge → Private 1v1 → Quick Match architecture, milestones, privacy, and anti-cheat boundaries.
+- Verification: 84/84 tests, TypeScript, production PWA build, and `git diff --check` pass. The bundled game client completed with no reported errors. Chromium drove Route 16 from Cotham Rd through the 13-character Wellington St target and found 0 backward steps across 14 vehicle samples, with zero console/page errors; the resulting gameplay capture was inspected.
+- Auth UI verification used intercepted local Supabase responses without storing credentials: login failure messaging, initial focus, background lock, Escape close, focus restoration, profile rename, and signed-in panel all passed with zero page errors. Desktop account/login captures and the 390px login capture were inspected; the mobile modal retained 20px side clearance and zero horizontal overflow.
+- Remaining production dependency: Vercel must contain valid `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` values for the optional account UI to appear and for a real provider E2E to be possible.

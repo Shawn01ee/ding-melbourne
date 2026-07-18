@@ -3041,6 +3041,17 @@ kbd {
   font-size: 0.72rem;
 }
 
+.modal-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--wrong) 35%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--wrong) 7%, var(--card));
+  color: var(--wrong);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 /* Account panel */
 .account-avatar {
   display: grid;

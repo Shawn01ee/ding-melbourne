@@ -47,8 +47,23 @@ function segmentLengths(points: { x: number; y: number }[]): { lengths: number[]
   return { lengths, total };
 }
 
-/** Remove narrow out-and-back sections while preserving real loops with area. */
+function medianOf(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+/**
+ * Remove narrow out-and-back sections while preserving real loops with area.
+ * The endpoint proximity scales with median point spacing so a large-extent
+ * route (such as Route 16) does not hide a real retrace inside a fixed pixel
+ * threshold. Length and area safeguards stay fixed to preserve genuine loops.
+ */
 function eraseRetracedLoops(points: TracedPoint[]): TracedPoint[] {
+  const spacing = medianOf(
+    points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y)),
+  ) || 1;
+  const gap = Math.max(MAX_RETRACE_GAP, spacing * 4);
   const clean: TracedPoint[] = [];
 
   for (const point of points) {
@@ -56,7 +71,7 @@ function eraseRetracedLoops(points: TracedPoint[]): TracedPoint[] {
     for (let i = clean.length - 3; i >= 0; i--) {
       const sourceSpan = point.sourceProgress - clean[i].sourceProgress;
       if (sourceSpan < MIN_RETRACE_PROGRESS) continue;
-      if (Math.hypot(point.x - clean[i].x, point.y - clean[i].y) > MAX_RETRACE_GAP) continue;
+      if (Math.hypot(point.x - clean[i].x, point.y - clean[i].y) > gap) continue;
 
       const candidate = [...clean.slice(i), point];
       let length = 0;

@@ -53,14 +53,29 @@ export function useAuth(): AuthState {
         if (!active) return;
         setAccount(current);
         setName(current ? await getProfileName() : null);
+      } catch {
+        if (active) {
+          setAccount(null);
+          setName(null);
+        }
       } finally {
         if (active) setLoading(false);
       }
-      unsub = await onAuthChange(async (next) => {
-        if (!active) return;
-        setAccount(next);
-        setName(next ? await getProfileName() : null);
-      });
+      try {
+        unsub = await onAuthChange((next) => {
+          if (!active) return;
+          setAccount(next);
+          if (!next) {
+            setName(null);
+            return;
+          }
+          void getProfileName()
+            .then((name) => active && setName(name))
+            .catch(() => active && setName(null));
+        });
+      } catch {
+        // The local game remains usable while the optional backend is offline.
+      }
     })();
     return () => {
       active = false;

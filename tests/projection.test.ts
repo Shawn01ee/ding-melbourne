@@ -112,6 +112,33 @@ describe('shared map projection', () => {
     }
   });
 
+  it('removes Route 16’s initial Kew out-and-back before the first in-game hop', () => {
+    const route = generatedRoutes.find((candidate) => candidate.route.shortName === '16')!;
+    const direction = route.route.directions.find((candidate) => candidate.id === 'to-melbourne-university')!;
+    const path = projectPath(direction.shape, 1000, 640, 70);
+    const start = path.remapProgress(stopProgress(route, direction.stops[0]));
+    const next = path.remapProgress(stopProgress(route, direction.stops[1]));
+    const samples = Array.from({ length: 21 }, (_, index) =>
+      path.pointAt(start + (next - start) * index / 20),
+    );
+    const direct = {
+      x: samples.at(-1)!.x - samples[0].x,
+      y: samples.at(-1)!.y - samples[0].y,
+    };
+
+    expect(path.points.length).toBeLessThan(direction.shape.length);
+    for (let index = 1; index < samples.length; index++) {
+      const step = {
+        x: samples[index].x - samples[index - 1].x,
+        y: samples[index].y - samples[index - 1].y,
+      };
+      expect(
+        step.x * direct.x + step.y * direct.y,
+        `Route 16 first hop sample ${index}`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
   it('erases overshoot-and-return spikes while keeping progress forward', () => {
     const spiked: [number, number][] = [
       [144.95, -37.9],

@@ -68,7 +68,8 @@ function toAccount(user: User): AccountInfo {
 export async function getAccount(): Promise<AccountInfo | null> {
   if (!backendEnabled) return null;
   const client = await getClient();
-  const { data } = await client.auth.getUser();
+  const { data, error } = await client.auth.getUser();
+  if (error) throw error;
   return data.user ? toAccount(data.user) : null;
 }
 
@@ -77,7 +78,8 @@ export async function deleteMyData(): Promise<void> {
   const client = await getClient();
   const { error } = await client.rpc('delete_my_data');
   if (error) throw error;
-  await client.auth.signOut();
+  const { error: signOutError } = await client.auth.signOut();
+  if (signOutError) throw signOutError;
 }
 
 export async function onAuthChange(cb: (account: AccountInfo | null) => void): Promise<() => void> {
@@ -91,23 +93,26 @@ export async function onAuthChange(cb: (account: AccountInfo | null) => void): P
 
 export async function signInWithGoogle(): Promise<void> {
   const client = await getClient();
-  await client.auth.signInWithOAuth({
+  const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: location.origin + location.pathname },
   });
+  if (error) throw error;
 }
 
 export async function signInWithEmail(email: string): Promise<void> {
   const client = await getClient();
-  await client.auth.signInWithOtp({
+  const { error } = await client.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: location.origin + location.pathname },
   });
+  if (error) throw error;
 }
 
 export async function signOut(): Promise<void> {
   const client = await getClient();
-  await client.auth.signOut();
+  const { error } = await client.auth.signOut();
+  if (error) throw error;
 }
 
 /** Read the caller's public display name, if a profile row exists. */

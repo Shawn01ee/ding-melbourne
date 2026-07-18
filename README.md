@@ -9,7 +9,8 @@ Schedule (both directions where published; Route 35 City Circle is circular).
 Modes: Full Route, 10-Stop Section, 60-second Sprint. Standard and Driver
 difficulties, responsive synthesized tram sounds, a follow-camera for long
 lines, a day/night theme, a complete 24-route network overview, local personal
-bests, installable app/offline support, no backend.
+bests, installable app/offline support, and an optional Supabase account and
+leaderboard layer.
 
 ## Install as an app
 
@@ -25,7 +26,7 @@ switches to a compact cockpit while the on-screen keyboard is visible.
 ```bash
 npm install
 npm run dev       # local dev server
-npm test          # 76 unit tests (gameplay, viewport handling, data validation, route registry)
+npm test          # unit tests (gameplay, projection, viewport, data, route registry)
 npm run build     # typecheck + production build
 npm run verify    # test + typecheck + production build (CI/Vercel gate)
 ```
@@ -41,16 +42,20 @@ npm run verify    # test + typecheck + production build (CI/Vercel gate)
   per-route lazy loading to keep the initial download small.
 - ✅ Installable PWA: standalone home-screen mode, app icons, updateable service
   worker, offline replay, and a Visual Viewport-driven mobile keyboard layout.
-- ⬜ Next: web font + branding polish, result sharing, then accounts + leaderboard
-  (Supabase) with server-side score validation.
+- ✅ Optional accounts and leaderboard: Google/email sign-in, driver profile,
+  server-validated score submission, ranking, and self-service data deletion.
+  It remains disabled until the deployment receives the documented Supabase variables.
+- ⬜ Next: connect and verify the production Supabase project, then implement
+  the Ghost Challenge milestone from [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ## Regenerating route data
 
 Route JSON in `src/data/generated/` is produced from the official Transport
 Victoria GTFS Schedule. See [scripts/gtfs/README.md](scripts/gtfs/README.md).
 
-See [docs/PLAN.md](docs/PLAN.md) for assumptions, contracts, and the transition
-table.
+See [docs/PLAN.md](docs/PLAN.md) for assumptions and contracts,
+[docs/BACKEND.md](docs/BACKEND.md) for deployment setup, and
+[docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) for the multiplayer roadmap.
 
 ## Data & attribution
 

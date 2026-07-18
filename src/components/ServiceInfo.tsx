@@ -172,8 +172,8 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
         </Section>
         <Section title="Progress and service">
           <div className="info-card-grid">
-            <Qa question="Do I need an account?">No. There are currently no accounts or server rankings. Settings and personal bests stay in this browser.</Qa>
-            <Qa question="Will my results move to another device?">No. Browser storage does not sync between devices, profiles, or private browsing sessions.</Qa>
+            <Qa question="Do I need an account?">No. Sign-in is optional and only enables the public leaderboard. Settings and personal bests continue to stay in this browser.</Qa>
+            <Qa question="Will my results move to another device?">Local settings and personal bests do not sync. Signed-in leaderboard records are available from other devices, but they do not replace the local personal-best history.</Qa>
             <Qa question="Are these live tram positions?">No. The map is a game view built from scheduled route and stop data, not live operations or journey planning.</Qa>
             <Qa question="How current is the network?">The bundled metropolitan tram network was generated from the Transport Victoria GTFS Schedule dated 10 July 2026.</Qa>
           </div>
@@ -199,8 +199,8 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
             <Qa question="Independent project">This is a fan-made game and is not affiliated with or endorsed by Transport Victoria, the Department of Transport and Planning, or Yarra Trams.</Qa>
           </div>
         </Section>
-        <Section title="What comes later">
-          <p>Accounts, cloud saves, public leaderboards, moderation, and anti-cheat validation are a separate backend phase. The current release deliberately works without registration.</p>
+        <Section title="Optional online features">
+          <p>The game still works without registration. When the optional backend is enabled, signing in adds a public leaderboard and a driver profile; local settings and personal bests remain local. Ghost challenges and private races are planned as later multiplayer phases.</p>
         </Section>
       </>
     ),
@@ -270,8 +270,8 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
           <p>These providers may store data on servers outside your country. The game uses no advertising, analytics, or third-party tracking.</p>
         </Section>
         <Section title="Keeping and deleting your data">
-          <p>Leaderboard records are kept until you remove them, delete your account, or a scheduled leaderboard reset clears the board. Account data is kept until you delete your account.</p>
-          <Note title="Your controls">Sign out any time, ask us to delete your account and records, or clear this site’s browser data to remove local preferences and bests. Contact <a href="mailto:leesmofficial01@gmail.com">leesmofficial01@gmail.com</a>.</Note>
+          <p>Leaderboard records are kept until you remove your app profile and records or a scheduled leaderboard reset clears the board. The sign-in provider may retain the underlying authentication identity separately.</p>
+          <Note title="Your controls">Use Driver profile → Delete account data to remove this app’s public profile and scores, sign out at any time, or clear this site’s browser data to remove local preferences and bests. For deletion of the underlying authentication identity, contact <a href="mailto:leesmofficial01@gmail.com">leesmofficial01@gmail.com</a>.</Note>
         </Section>
         <Section title="Security and younger players">
           <p>Traffic is served over HTTPS. Leaderboard rows are write-protected by database row-level security and validated on the server, so the browser cannot post scores directly. If you are under the age of consent in your country, please play without signing in.</p>
@@ -294,7 +294,7 @@ const PAGE_COPY: Record<InfoPageId, PageCopy> = {
         </Section>
         <Section title="Accounts and the leaderboard">
           <p>Signing in is optional and only enables the public leaderboard. Choose a display name suitable for a public board, and post only your own genuine play.</p>
-          <p>Automated input, scripts, shared answers, or tampering may have records removed and the account suspended. We may also reset the board or adjust rankings to keep them fair. You can delete your account and records at any time.</p>
+          <p>Automated input, scripts, shared answers, or tampering may have records removed and the account suspended. We may also reset the board or adjust rankings to keep them fair. You can remove your app profile and leaderboard records at any time.</p>
         </Section>
         <Section title="No journey-planning warranty">
           <p>The game may simplify, merge, shorten, or rearrange public transport data for play. It does not provide live disruption advice, accessibility information, fares, timetables, or a safe walking route.</p>
