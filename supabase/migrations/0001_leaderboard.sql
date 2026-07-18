@@ -168,3 +168,25 @@ as $$
 $$;
 
 grant execute on function public.top_scores(text, text, text, text, int) to anon, authenticated;
+
+-- ---------- delete_my_data (self-service account data removal) ----------
+-- Removes the caller's public profile and every score. Full auth-user deletion
+-- needs the service role (an Edge Function); this clears everything the app
+-- stores and drops the player off the board.
+create or replace function public.delete_my_data()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then raise exception 'auth required'; end if;
+  delete from scores where user_id = v_uid;
+  delete from profiles where id = v_uid;
+end;
+$$;
+
+revoke all on function public.delete_my_data() from public;
+grant execute on function public.delete_my_data() to authenticated;

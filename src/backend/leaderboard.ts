@@ -46,17 +46,46 @@ export interface RunResult {
   errors: number;
 }
 
-export async function getUser(): Promise<User | null> {
+export interface AccountInfo {
+  id: string;
+  email: string | null;
+  provider: string | null;
+  avatarUrl: string | null;
+  fullName: string | null;
+}
+
+function toAccount(user: User): AccountInfo {
+  const meta = user.user_metadata ?? {};
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    provider: (user.app_metadata?.provider as string | undefined) ?? 'email',
+    avatarUrl: (meta.avatar_url as string | undefined) ?? (meta.picture as string | undefined) ?? null,
+    fullName: (meta.full_name as string | undefined) ?? (meta.name as string | undefined) ?? null,
+  };
+}
+
+export async function getAccount(): Promise<AccountInfo | null> {
   if (!backendEnabled) return null;
   const client = await getClient();
   const { data } = await client.auth.getUser();
-  return data.user ?? null;
+  return data.user ? toAccount(data.user) : null;
 }
 
-export async function onAuthChange(cb: (user: User | null) => void): Promise<() => void> {
+/** Delete the caller's public profile and every score, then sign out. */
+export async function deleteMyData(): Promise<void> {
+  const client = await getClient();
+  const { error } = await client.rpc('delete_my_data');
+  if (error) throw error;
+  await client.auth.signOut();
+}
+
+export async function onAuthChange(cb: (account: AccountInfo | null) => void): Promise<() => void> {
   if (!backendEnabled) return () => {};
   const client = await getClient();
-  const { data } = client.auth.onAuthStateChange((_event, session) => cb(session?.user ?? null));
+  const { data } = client.auth.onAuthStateChange((_event, session) =>
+    cb(session?.user ? toAccount(session.user) : null),
+  );
   return () => data.subscription.unsubscribe();
 }
 
