@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useAuth } from '../backend/useAuth';
 import { approachCue, errorTick, keyTick, stopArrivalCue } from '../audio/bell';
 import { ConfigScreen } from '../components/ConfigScreen';
 import { CountdownScreen } from '../components/CountdownScreen';
@@ -14,6 +15,7 @@ import { loadLastConfig, loadSettings, loadTheme, saveTheme } from '../storage/l
 import { appViewport, stableKeyboardHeight, type AppViewport } from './visualViewport';
 
 export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initialRoute: RouteData }) {
+  const auth = useAuth();
   const [theme, setTheme] = useState(loadTheme);
   const [networkOpen, setNetworkOpen] = useState(false);
   const [infoPage, setInfoPage] = useState<InfoPageId | null>(() => infoPageFromHash(window.location.hash));
@@ -342,6 +344,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         onOpenNetwork={() => setNetworkOpen(true)}
         onCloseNetwork={() => setNetworkOpen(false)}
         onOpenInfo={openInfo}
+        auth={auth}
       />
     );
   if (state.phase === 'countdown')
@@ -355,6 +358,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         dispatch={dispatch}
         theme={theme}
         onToggleTheme={toggleTheme}
+        auth={auth}
       />
     );
 

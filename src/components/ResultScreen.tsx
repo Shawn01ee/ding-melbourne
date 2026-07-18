@@ -6,7 +6,9 @@ import { accuracyOf, elapsedMs, formatClock, scoreOf, totalRunStops, wpmOf } fro
 import { RouteCanvas } from '../map/RouteCanvas';
 import { isBetter, loadBest, pbKey, saveBest, type PersonalBest } from '../storage/local';
 import type { ColorTheme } from '../storage/local';
+import type { AuthState } from '../backend/useAuth';
 import { drawResultCard } from '../share/resultCard';
+import { Leaderboard } from './Leaderboard';
 import { ThemeToggle } from './ThemeToggle';
 
 interface ResultScreenProps {
@@ -15,6 +17,7 @@ interface ResultScreenProps {
   dispatch: (action: GameAction) => void;
   theme: ColorTheme;
   onToggleTheme: () => void;
+  auth: AuthState;
 }
 
 function driverRank(accuracy: number, wpm: number, completed: boolean): string {
@@ -25,7 +28,7 @@ function driverRank(accuracy: number, wpm: number, completed: boolean): string {
   return 'ROUTE LEARNER';
 }
 
-export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme }: ResultScreenProps) {
+export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, auth }: ResultScreenProps) {
   // Compare-and-save synchronously once on mount so the pre-run PB is shown.
   const [{ previous, isNew, result }] = useState(() => {
     const key = pbKey(state.route.route.id, state.config);
@@ -231,6 +234,20 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme }: 
             RUN AGAIN
           </button>
         </div>
+
+        <Leaderboard
+          auth={auth}
+          routeShort={state.route.route.shortName}
+          config={state.config}
+          result={{
+            stops: result.stops,
+            timeMs: result.timeMs,
+            wpm: result.wpm,
+            accuracy: result.accuracy,
+            bestStreak: state.bestStreak,
+            errors: state.errors,
+          }}
+        />
           </section>
 
           <div className="tram-cab-side tram-cab-right" aria-hidden="true">

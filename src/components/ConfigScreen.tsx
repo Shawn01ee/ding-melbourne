@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
+import type { AuthState } from '../backend/useAuth';
 import { primeAudio } from '../audio/bell';
+import { AuthControl } from './AuthControl';
 import { NetworkOverview } from './NetworkOverview';
 import { ThemeToggle } from './ThemeToggle';
 import { TramLogo } from './TramLogo';
@@ -26,6 +28,7 @@ interface ConfigScreenProps {
   onOpenNetwork: () => void;
   onCloseNetwork: () => void;
   onOpenInfo: (page: InfoPageId) => void;
+  auth: AuthState;
 }
 
 const MODES: [Mode, string, string][] = [
@@ -48,6 +51,7 @@ export function ConfigScreen({
   onOpenNetwork,
   onCloseNetwork,
   onOpenInfo,
+  auth,
 }: ConfigScreenProps) {
   const { config } = state;
   const direction = route.route.directions[directionIndexOf(state)];
@@ -133,6 +137,7 @@ export function ConfigScreen({
       </header>
 
       <section className="config-card" aria-label="Game setup">
+        <AuthControl auth={auth} />
         <div className="config-step">
           <div className="step-head">
             <span className="step-badge">1</span>
