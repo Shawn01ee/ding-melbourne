@@ -89,6 +89,20 @@ export function pbKey(routeId: string, config: GameConfig): string {
   return [routeId, config.directionId, config.mode, config.difficulty, config.startStopIndex].join(':');
 }
 
+const KEY_GHOST = 'ding.ghost.v1';
+
+/** Ghost timelines are stored per pbKey; typed as unknown to avoid a cycle. */
+export function loadGhostRaw<T>(key: string): T | null {
+  const all = read<Record<string, T>>(KEY_GHOST) ?? {};
+  return all[key] ?? null;
+}
+
+export function saveGhostRaw<T>(key: string, ghost: T): void {
+  const all = read<Record<string, T>>(KEY_GHOST) ?? {};
+  all[key] = ghost;
+  write(KEY_GHOST, all);
+}
+
 export function loadBest(key: string): PersonalBest | null {
   const all = read<Record<string, PersonalBest>>(KEY_PERSONAL_BEST) ?? {};
   return all[key] ?? null;

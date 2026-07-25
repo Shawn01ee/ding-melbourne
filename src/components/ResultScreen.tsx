@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { inkForBackground } from '../brand';
 import type { RouteSummary } from '../data/routes';
 import { directionIndexOf, targetText, type GameAction, type GameState } from '../game/reducer';
+import type { Ghost } from '../game/ghost';
 import { accuracyOf, elapsedMs, formatClock, scoreOf, totalRunStops, wpmOf } from '../game/selectors';
 import { RouteCanvas } from '../map/RouteCanvas';
 import { isBetter, loadBest, pbKey, saveBest, type PersonalBest } from '../storage/local';
@@ -18,6 +19,7 @@ interface ResultScreenProps {
   theme: ColorTheme;
   onToggleTheme: () => void;
   auth: AuthState;
+  ghost?: Ghost | null;
 }
 
 function driverRank(accuracy: number, wpm: number, completed: boolean): string {
@@ -28,7 +30,7 @@ function driverRank(accuracy: number, wpm: number, completed: boolean): string {
   return 'ROUTE LEARNER';
 }
 
-export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, auth }: ResultScreenProps) {
+export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, auth, ghost = null }: ResultScreenProps) {
   // Compare-and-save synchronously once on mount so the pre-run PB is shown.
   const [{ previous, isNew, result }] = useState(() => {
     const key = pbKey(state.route.route.id, state.config);
@@ -213,6 +215,27 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, au
               : `Personal best: ${formatClock(previous.timeMs)}`
             : 'First run on this setup — benchmark set.'}
         </p>
+
+        {(() => {
+          if (!ghost || ghost.samples.length < 2) {
+            return <p className="ghost-compare fresh">👻 Ghost saved — race it next run.</p>;
+          }
+          if (sprint) {
+            const d = result.stops - ghost.stops;
+            return (
+              <p className={`ghost-compare ${d >= 0 ? 'ahead' : 'behind'}`}>
+                {d > 0 ? `👻 ${d} more stop${d > 1 ? 's' : ''} than your ghost` : d < 0 ? `👻 ${-d} stop${-d > 1 ? 's' : ''} behind your ghost` : '👻 Tied with your ghost'}
+              </p>
+            );
+          }
+          const d = ghost.totalMs - result.timeMs; // positive = you were faster
+          const secs = (Math.abs(d) / 1000).toFixed(1);
+          return (
+            <p className={`ghost-compare ${d >= 0 ? 'ahead' : 'behind'}`}>
+              {d > 0 ? `🏁 ${secs}s faster than your ghost` : d < 0 ? `👻 ${secs}s behind your ghost` : '👻 Tied with your ghost'}
+            </p>
+          );
+        })()}
 
         <div className="result-actions">
           <button

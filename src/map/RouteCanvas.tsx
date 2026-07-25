@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { stopProgress } from '../data/types';
+import { ghostProgressAt, type Ghost } from '../game/ghost';
 import { projectCoordinates, projectPath } from './projection';
 
 const VIEW_W = 1000;
@@ -24,6 +25,9 @@ interface RouteCanvasProps {
   startStopIndex: number;
   /** Accepted-character progress toward the current stop, from 0 to 1. */
   typedProgress: number;
+  /** Your best run for this setup, replayed as a translucent ghost tram. */
+  ghost?: Ghost | null;
+  ghostElapsedMs?: number;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -65,6 +69,8 @@ export function RouteCanvas({
   stopIndex,
   startStopIndex,
   typedProgress,
+  ghost = null,
+  ghostElapsedMs = 0,
 }: RouteCanvasProps) {
   const direction = route.route.directions[directionIndex];
   const reducedMotion = usePrefersReducedMotion();
@@ -146,6 +152,13 @@ export function RouteCanvas({
   const labelOffset = currentLabelOffset(tram.angleDeg);
   const completed = path.pointsUpTo(tramProgress);
   const color = route.route.color;
+
+  // Ghost tram: your best run replayed by elapsed time. Recorded progress is in
+  // raw source space, so remap it onto the rendered path like the stops.
+  const ghostPoint =
+    ghost && ghost.samples.length > 1
+      ? path.pointAt(path.remapProgress(ghostProgressAt(ghost, ghostElapsedMs)))
+      : null;
 
   // Follow camera: scale world by `zoom`, translate so the tram sits slightly
   // above centre, leaving breathing room for the overlaid driving console.
@@ -235,6 +248,20 @@ export function RouteCanvas({
             </g>
           );
         })}
+
+        {ghostPoint && (
+          <g
+            className="ghost-tram"
+            style={{
+              transform: `translate(${ghostPoint.x}px, ${ghostPoint.y}px) scale(${(k * 1.16).toFixed(4)}) rotate(${ghostPoint.angleDeg}deg)`,
+              transition: reducedMotion ? 'none' : 'transform 0.2s linear',
+            }}
+            aria-hidden="true"
+          >
+            <rect x={-26} y={-11} width={52} height={22} rx={8} fill="#17211D" opacity={0.14} />
+            <rect x={-26} y={-11} width={52} height={22} rx={8} fill="none" stroke="#17211D" strokeOpacity={0.4} strokeWidth={2} strokeDasharray="4 3" />
+          </g>
+        )}
 
         <g
           className="tram"

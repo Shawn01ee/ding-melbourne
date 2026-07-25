@@ -3184,3 +3184,19 @@ kbd {
   color: #fff;
   font-weight: 800;
 }
+
+/* ---------- Ghost Challenge (race your best run) ---------- */
+.ghost-tram {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ghost-compare {
+  margin: 6px 0 0;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.ghost-compare.ahead { color: var(--cockpit-green); }
+.ghost-compare.behind { color: var(--muted); }
+.ghost-compare.fresh { color: var(--muted); font-weight: 700; }

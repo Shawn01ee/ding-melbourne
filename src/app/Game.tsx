@@ -10,8 +10,18 @@ import { StopConsole } from '../components/StopConsole';
 import { loadRoute, type RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
+import { GhostRecorder, ghostIsBetter, type Ghost } from '../game/ghost';
+import { elapsedMs } from '../game/selectors';
 import { RouteCanvas } from '../map/RouteCanvas';
-import { loadLastConfig, loadSettings, loadTheme, saveTheme } from '../storage/local';
+import {
+  loadGhostRaw,
+  loadLastConfig,
+  loadSettings,
+  loadTheme,
+  pbKey,
+  saveGhostRaw,
+  saveTheme,
+} from '../storage/local';
 import { appViewport, stableKeyboardHeight, type AppViewport } from './visualViewport';
 
 export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initialRoute: RouteData }) {
@@ -52,6 +62,12 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
   const inGame = state.phase === 'typing' || state.phase === 'paused';
   const target = targetText(state);
   const typedProgress = target.length > 0 ? [...state.input].length / [...target].length : 0;
+
+  // Ghost Challenge (M1, backend-free): race your own best run for this setup.
+  const recorderRef = useRef(new GhostRecorder());
+  const [raceGhost, setRaceGhost] = useState<Ghost | null>(null);
+  const prevStartedRef = useRef<number | null>(state.startedAt);
+  const prevGhostPhaseRef = useRef(state.phase);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -309,6 +325,33 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     typedProgress,
   ]);
 
+  // At the start of a run, load the ghost to race and reset the recorder.
+  useEffect(() => {
+    const started = state.startedAt !== null && prevStartedRef.current === null;
+    prevStartedRef.current = state.startedAt;
+    if (started) {
+      recorderRef.current.reset();
+      setRaceGhost(loadGhostRaw<Ghost>(pbKey(route.route.id, state.config)));
+    }
+  }, [state.startedAt, route.route.id, state.config]);
+
+  // Sample this run's map progress over time (throttled inside the recorder).
+  useEffect(() => {
+    if (state.phase === 'typing') recorderRef.current.sample(state);
+  }, [state.now, typedProgress, state.stopIndex, state.phase, state]);
+
+  // On finish, keep the recorded run as the new ghost if it beats the stored one.
+  useEffect(() => {
+    const was = prevGhostPhaseRef.current;
+    prevGhostPhaseRef.current = state.phase;
+    if (state.phase === 'finished' && was !== 'finished') {
+      const key = pbKey(route.route.id, state.config);
+      const run = recorderRef.current.finish(state);
+      if (ghostIsBetter(state.config.mode, run, loadGhostRaw<Ghost>(key))) saveGhostRaw(key, run);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
+
   // Clicking empty space restores input focus; control buttons are exempt (PRD §6).
   const restoreFocus = (e: React.MouseEvent) => {
     const el = e.target as HTMLElement;
@@ -359,6 +402,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         theme={theme}
         onToggleTheme={toggleTheme}
         auth={auth}
+        ghost={raceGhost}
       />
     );
 
@@ -373,6 +417,8 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
           stopIndex={state.stopIndex}
           startStopIndex={state.config.startStopIndex}
           typedProgress={typedProgress}
+          ghost={raceGhost}
+          ghostElapsedMs={elapsedMs(state)}
         />
       </div>
       <StopConsole state={state} dispatch={dispatch} />
