@@ -89,6 +89,26 @@ export function pbKey(routeId: string, config: GameConfig): string {
   return [routeId, config.directionId, config.mode, config.difficulty, config.startStopIndex].join(':');
 }
 
+const KEY_STATS = 'ding.stats.v1';
+const KEY_ROUTE_LOG = 'ding.routeLog.v1';
+
+/** Driver's Log records; typed generically so storage stays cycle-free. */
+export function loadStatsRaw<T>(): T | null {
+  return read<T>(KEY_STATS);
+}
+
+export function saveStatsRaw<T>(stats: T): void {
+  write(KEY_STATS, stats);
+}
+
+export function loadRouteLogRaw<T>(): T | null {
+  return read<T>(KEY_ROUTE_LOG);
+}
+
+export function saveRouteLogRaw<T>(log: T): void {
+  write(KEY_ROUTE_LOG, log);
+}
+
 const KEY_GHOST = 'ding.ghost.v1';
 
 /** Ghost timelines are stored per pbKey; typed as unknown to avoid a cycle. */

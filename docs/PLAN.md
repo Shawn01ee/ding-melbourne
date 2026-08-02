@@ -105,14 +105,14 @@ PB 비교: full-route는 timeMs 최소, sprint는 stops 최대(동률 시 wpm).
 1. ✅ Phase 0 Foundation: repo, tokens, fixture, reducer + unit tests
 2. ✅ Phase 1 Playable slice: config → countdown → typing → bell → move → result
 3. ✅ Phase 2 Content+GTFS: `scripts/gtfs/` 파이프라인, 2026-07-10 공식 GTFS의 전체 24개 노선(정규 노선 양방향, Route 35 순환 단방향), 스키마 v2, lazy route registry, 노선 선택 UI, Section(10 stops) 모드, 트램 추종 카메라(긴 노선 가독성), 트램 리버리 아이콘, 합성 사운드, Vercel 자동 배포
-4. 🟨 Phase 3 Polish: 오리지널 트램 로고·파비콘, 지리형 네트워크 탐색기, 안내 문서, 설치형 PWA·오프라인 재실행, 모바일 키보드 전용 콕핏 완료. 자체 호스팅 웹폰트(Public Sans/Inter 후보), 결과 공유 이미지/링크, 커스텀 도메인이 남음
+4. ✅ Phase 3 Polish: 오리지널 트램 로고·파비콘, 지리형 네트워크 탐색기, 안내 문서, 설치형 PWA·오프라인 재실행, 모바일 키보드 전용 콕핏, 자체 호스팅 웹폰트(Public Sans), 결과 공유 이미지. 커스텀 도메인은 **구매하지 않기로 결정**(2026-07-25) — Vercel URL이 공식 주소
 5. 🟨 Phase 4 Accounts ([BACKEND.md](BACKEND.md)): Supabase DB·RLS·검증 RPC, Google/이메일 로그인 모달, Driver profile, 결과 제출, 리더보드, 데이터 삭제 UI까지 완료. 미설정 시 비활성인 구조이며 남은 작업은 운영 Supabase 프로젝트 생성, Vercel 환경변수 설정, 실제 공급자 E2E 검수다.
-6. ⬜ Phase 5+ Multiplayer ([MULTIPLAYER.md](MULTIPLAYER.md)): Ghost Challenge → 초대형 Private 1v1 → 운영·신고 체계를 갖춘 Quick Match 순서로 진행한다.
+6. ⏸️ Phase 5+ Multiplayer ([MULTIPLAYER.md](MULTIPLAYER.md)): M1 Ghost Challenge(로컬 내 기록 대결)는 출시됨. 온라인 단계(공유 고스트·1v1·Quick Match)는 **사용자 결정으로 보류**(2026-07-25) — 복잡도 대비 우선순위를 솔로 완성도에 둠.
 
-## 6. Unresolved decisions (사용자 결정 필요)
+## 6. Decisions
 
-1. **최종 브랜드명** — DING! Melbourne / TRAM TYPE / NEXT STOP 중 선택 (현재 작업명 상수).
-2. **멀티플레이 첫 공개 범위** — Ghost Challenge만 먼저 낼지 Private 1v1까지 묶을지.
+1. ✅ **최종 브랜드명 = DING! Melbourne** (2026-07-25 확정, `src/brand.ts` 상수 유지).
+2. ⏸️ **멀티플레이 온라인 단계 보류** — 솔로 경험 완성 우선.
 3. **Driver 난이도 대소문자** — 현재 대소문자 무시·구두점 필수. 완전 엄격 모드로 바꿀지.
 4. **GTFS 답안 키 정리** — 다음 데이터 재생성 때 내부 `easy/standard/driver` 키를
    플레이어용 `standard/driver` 두 tier로 마이그레이션할지.

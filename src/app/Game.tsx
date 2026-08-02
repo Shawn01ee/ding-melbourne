@@ -11,15 +11,25 @@ import { loadRoute, type RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
 import { GhostRecorder, ghostIsBetter, type Ghost } from '../game/ghost';
-import { elapsedMs } from '../game/selectors';
+import {
+  emptyStats,
+  recordRun,
+  type LifetimeStats,
+  type RouteLog,
+} from '../game/driverLog';
+import { elapsedMs, wpmOf } from '../game/selectors';
 import { RouteCanvas } from '../map/RouteCanvas';
 import {
   loadGhostRaw,
   loadLastConfig,
+  loadRouteLogRaw,
   loadSettings,
+  loadStatsRaw,
   loadTheme,
   pbKey,
   saveGhostRaw,
+  saveRouteLogRaw,
+  saveStatsRaw,
   saveTheme,
 } from '../storage/local';
 import { appViewport, stableKeyboardHeight, type AppViewport } from './visualViewport';
@@ -348,6 +358,27 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
       const key = pbKey(route.route.id, state.config);
       const run = recorderRef.current.finish(state);
       if (ghostIsBetter(state.config.mode, run, loadGhostRaw<Ghost>(key))) saveGhostRaw(key, run);
+
+      // Driver's Log: lifetime totals and the per-line collection.
+      const next = recordRun(
+        loadStatsRaw<LifetimeStats>() ?? emptyStats(),
+        loadRouteLogRaw<RouteLog>() ?? {},
+        {
+          routeShort: route.route.shortName,
+          directionId: state.config.directionId,
+          mode: state.config.mode,
+          startStopIndex: state.config.startStopIndex,
+          completed: state.finishReason === 'completed',
+          stops: state.stopsCompleted,
+          timeMs: Math.round(elapsedMs(state)),
+          wpm: wpmOf(state),
+          errors: state.errors,
+          bestStreak: state.bestStreak,
+          at: new Date().toISOString(),
+        },
+      );
+      saveStatsRaw(next.stats);
+      saveRouteLogRaw(next.log);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);

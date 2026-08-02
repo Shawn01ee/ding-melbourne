@@ -1,7 +1,8 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { AuthState } from '../backend/useAuth';
 import { primeAudio } from '../audio/bell';
 import { AuthControl } from './AuthControl';
+import { DriverLog } from './DriverLog';
 import { NetworkOverview } from './NetworkOverview';
 import { ThemeToggle } from './ThemeToggle';
 import { TramLogo } from './TramLogo';
@@ -53,6 +54,7 @@ export function ConfigScreen({
   onOpenInfo,
   auth,
 }: ConfigScreenProps) {
+  const [logOpen, setLogOpen] = useState(false);
   const { config } = state;
   const direction = route.route.directions[directionIndexOf(state)];
   // Any stop except the terminus can be a start (a run needs ≥1 hop).
@@ -144,6 +146,14 @@ export function ConfigScreen({
             <span className="step-title">Pick a line</span>
             <span className="step-meta">{routes.length} lines</span>
             <div className="step-head-actions">
+              <button
+                type="button"
+                className="network-open route-network-open"
+                onClick={() => setLogOpen(true)}
+              >
+                <span aria-hidden="true">📔</span>
+                <span>My log</span>
+              </button>
               <button
                 type="button"
                 className="network-open route-network-open"
@@ -327,6 +337,8 @@ export function ConfigScreen({
           .
         </p>
       </footer>
+
+      {logOpen && <DriverLog routes={routes} onClose={() => setLogOpen(false)} />}
 
       {networkOpen && (
         <NetworkOverview
