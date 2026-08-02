@@ -10,7 +10,7 @@ import { StopConsole } from '../components/StopConsole';
 import { loadRoute, type RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import { directionIndexOf, initialState, reducer, targetText } from '../game/reducer';
-import { GhostRecorder, ghostIsBetter, type Ghost } from '../game/ghost';
+import { GhostRecorder, ghostIsBetter, splitDelta, type Ghost } from '../game/ghost';
 import {
   emptyStats,
   recordRun,
@@ -76,6 +76,9 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
   // Ghost Challenge (M1, backend-free): race your own best run for this setup.
   const recorderRef = useRef(new GhostRecorder());
   const [raceGhost, setRaceGhost] = useState<Ghost | null>(null);
+  const [splitFlash, setSplitFlash] = useState<{ delta: number; key: number } | null>(null);
+  /** The run that just finished, so the result screen can show its splits. */
+  const [finishedRun, setFinishedRun] = useState<Ghost | null>(null);
   const prevStartedRef = useRef<number | null>(state.startedAt);
   const prevGhostPhaseRef = useRef(state.phase);
 
@@ -289,8 +292,24 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     prevStopsRef.current = state.stopsCompleted;
     if (added > 0) {
       stopArrivalCue(state.config.soundOn, state.phase === 'finished', state.stopsCompleted);
+      // Close this stop's split before reading it: this effect is declared
+      // before the sampling effect, so the recorder is otherwise one behind.
+      recorderRef.current.sample(state);
+      // Split flash: how this stop compared with the ghost's same stop.
+      const index = state.stopsCompleted - 1;
+      const mine = recorderRef.current.currentSplits()[index];
+      const delta = mine === undefined ? null : splitDelta(raceGhost, index, mine);
+      if (delta !== null) setSplitFlash({ delta, key: state.stopsCompleted });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.stopsCompleted, state.config.soundOn, state.phase]);
+
+  // Clear the flash shortly after it appears.
+  useEffect(() => {
+    if (!splitFlash) return;
+    const timer = setTimeout(() => setSplitFlash(null), 1100);
+    return () => clearTimeout(timer);
+  }, [splitFlash]);
 
   // Per-keystroke ticks: light click for a correct key, low thud for an error.
   const prevKeysRef = useRef(state.totalKeystrokes);
@@ -341,6 +360,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     prevStartedRef.current = state.startedAt;
     if (started) {
       recorderRef.current.reset();
+      setSplitFlash(null);
       setRaceGhost(loadGhostRaw<Ghost>(pbKey(route.route.id, state.config)));
     }
   }, [state.startedAt, route.route.id, state.config]);
@@ -357,6 +377,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
     if (state.phase === 'finished' && was !== 'finished') {
       const key = pbKey(route.route.id, state.config);
       const run = recorderRef.current.finish(state);
+      setFinishedRun(run);
       if (ghostIsBetter(state.config.mode, run, loadGhostRaw<Ghost>(key))) saveGhostRaw(key, run);
 
       // Driver's Log: lifetime totals and the per-line collection.
@@ -434,6 +455,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
         onToggleTheme={toggleTheme}
         auth={auth}
         ghost={raceGhost}
+        runSplits={finishedRun?.splits ?? []}
       />
     );
 
@@ -452,6 +474,16 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
           ghostElapsedMs={elapsedMs(state)}
         />
       </div>
+      {splitFlash && (
+        <output
+          key={splitFlash.key}
+          className={`split-flash ${splitFlash.delta >= 0 ? 'ahead' : 'behind'}`}
+        >
+          {splitFlash.delta >= 0 ? '−' : '+'}
+          {(Math.abs(splitFlash.delta) / 1000).toFixed(1)}s
+        </output>
+      )}
+
       <StopConsole state={state} dispatch={dispatch} ghost={raceGhost} />
 
       {state.phase === 'paused' && (

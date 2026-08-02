@@ -28,7 +28,7 @@ create table if not exists public.scores (
   user_id uuid not null references auth.users (id) on delete cascade,
   route_short text not null,
   direction_id text not null,
-  mode text not null check (mode in ('full-route', 'section', 'sprint')),
+  mode text not null check (mode in ('full-route', 'section', 'sprint', 'time-attack')),
   difficulty text not null check (difficulty in ('standard', 'driver')),
   start_stop_index int not null default 0,
   stops int not null,
@@ -89,7 +89,7 @@ begin
   if v_recent >= 20 then raise exception 'rate limited'; end if;
 
   -- Sanity bounds (cheap first line of defence; replay verification is future work).
-  if p_mode not in ('full-route', 'section', 'sprint') then raise exception 'bad mode'; end if;
+  if p_mode not in ('full-route', 'section', 'sprint', 'time-attack') then raise exception 'bad mode'; end if;
   if p_difficulty not in ('standard', 'driver') then raise exception 'bad difficulty'; end if;
   if p_accuracy < 0 or p_accuracy > 100 then raise exception 'bad accuracy'; end if;
   if p_wpm < 0 or p_wpm > 400 then raise exception 'bad wpm'; end if;

@@ -10,7 +10,7 @@ import { INFO_NAV_ITEMS, type InfoPageId } from './ServiceInfo';
 import type { RouteSummary } from '../data/routes';
 import type { RouteData } from '../data/types';
 import type { GameAction, GameState, Mode } from '../game/reducer';
-import { directionIndexOf, SECTION_LENGTH } from '../game/reducer';
+import { directionIndexOf, SECTION_LENGTH, TIME_ATTACK_LENGTH } from '../game/reducer';
 import { stopShortName } from '../game/selectors';
 import { saveLastConfig, saveLastRouteId, saveSettings, type ColorTheme } from '../storage/local';
 import { BRAND, TAGLINE, inkForBackground } from '../brand';
@@ -35,6 +35,7 @@ interface ConfigScreenProps {
 const MODES: [Mode, string, string][] = [
   ['full-route', 'Full Route', 'Start to terminus'],
   ['section', `${SECTION_LENGTH}-Stop Section`, `Next ${SECTION_LENGTH} stops`],
+  ['time-attack', 'Time Attack', `${TIME_ATTACK_LENGTH} stops vs your ghost`],
   ['sprint', '60s Sprint', 'As many as you can'],
 ];
 
@@ -72,10 +73,12 @@ export function ConfigScreen({
   };
 
   const startStop = route.stops[direction.stops[config.startStopIndex]];
+  const cappedModeLength =
+    config.mode === 'section' ? SECTION_LENGTH : config.mode === 'time-attack' ? TIME_ATTACK_LENGTH : null;
   const runEndIndex =
-    config.mode === 'section'
-      ? Math.min(config.startStopIndex + SECTION_LENGTH - 1, direction.stops.length - 1)
-      : direction.stops.length - 1;
+    cappedModeLength === null
+      ? direction.stops.length - 1
+      : Math.min(config.startStopIndex + cappedModeLength - 1, direction.stops.length - 1);
   const endStop = route.stops[direction.stops[runEndIndex]];
 
   return (

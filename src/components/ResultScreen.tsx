@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { inkForBackground } from '../brand';
 import type { RouteSummary } from '../data/routes';
 import { directionIndexOf, targetText, type GameAction, type GameState } from '../game/reducer';
-import type { Ghost } from '../game/ghost';
+import { splitDelta, type Ghost } from '../game/ghost';
 import { accuracyOf, elapsedMs, formatClock, scoreOf, totalRunStops, wpmOf } from '../game/selectors';
 import { RouteCanvas } from '../map/RouteCanvas';
 import { isBetter, loadBest, pbKey, saveBest, type PersonalBest } from '../storage/local';
@@ -20,6 +20,8 @@ interface ResultScreenProps {
   onToggleTheme: () => void;
   auth: AuthState;
   ghost?: Ghost | null;
+  /** Split times of the run just finished (Time Attack). */
+  runSplits?: number[];
 }
 
 function driverRank(accuracy: number, wpm: number, completed: boolean): string {
@@ -30,7 +32,7 @@ function driverRank(accuracy: number, wpm: number, completed: boolean): string {
   return 'ROUTE LEARNER';
 }
 
-export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, auth, ghost = null }: ResultScreenProps) {
+export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, auth, ghost = null, runSplits = [] }: ResultScreenProps) {
   // Compare-and-save synchronously once on mount so the pre-run PB is shown.
   const [{ previous, isNew, result }] = useState(() => {
     const key = pbKey(state.route.route.id, state.config);
@@ -56,11 +58,15 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, au
   const rank = driverRank(result.accuracy, result.wpm, completed);
   const [shareLabel, setShareLabel] = useState('SHARE RESULT');
 
+  const mySplits = runSplits;
+
   const modeLabel =
     state.config.mode === 'sprint'
       ? '60s Sprint'
-      : state.config.mode === 'section'
-        ? '10-Stop Section'
+      : state.config.mode === 'time-attack'
+        ? 'Time Attack'
+        : state.config.mode === 'section'
+          ? '10-Stop Section'
         : 'Full Route';
 
   const shareResult = async () => {
@@ -230,6 +236,28 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, au
             <dd>{state.bestStreak}</dd>
           </div>
         </dl>
+
+        {state.config.mode === 'time-attack' && mySplits.length > 0 && (
+          <div className="split-table" aria-label="Split times">
+            <div className="split-head">
+              <span>Stop</span>
+              <span>Split</span>
+              <span>vs ghost</span>
+            </div>
+            {mySplits.map((ms, i) => {
+              const d = splitDelta(ghost, i, ms);
+              return (
+                <div key={i} className="split-row">
+                  <span className="split-stop">{i + 1}</span>
+                  <span className="split-time">{formatClock(ms)}</span>
+                  <span className={`split-delta ${d === null ? '' : d >= 0 ? 'ahead' : 'behind'}`}>
+                    {d === null ? '—' : `${d >= 0 ? '−' : '+'}${(Math.abs(d) / 1000).toFixed(1)}s`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <p className="pb-compare">
           {previous

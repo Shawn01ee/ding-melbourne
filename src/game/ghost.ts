@@ -13,6 +13,14 @@ export interface Ghost {
   stops: number;
   /** [elapsedMs, mapProgress 0..1] samples, ascending in time. */
   samples: [number, number][];
+  /** Elapsed ms as each stop was cleared — the split times for Time Attack. */
+  splits?: number[];
+}
+
+/** Gap for split n: positive means you cleared it faster than the ghost. */
+export function splitDelta(ghost: Ghost | null, index: number, myMs: number): number | null {
+  const ghostMs = ghost?.splits?.[index];
+  return ghostMs === undefined ? null : ghostMs - myMs;
 }
 
 /** Map progress (0..1 along the played direction) of the tram right now. */
@@ -85,13 +93,22 @@ export function ghostIsBetter(mode: string, run: Ghost, prev: Ghost | null): boo
 /** Compact recorder: keeps a sample when time or progress moved enough. */
 export class GhostRecorder {
   private samples: [number, number][] = [];
+  private splits: number[] = [];
+  private seenStops = 0;
 
   reset() {
     this.samples = [];
+    this.splits = [];
+    this.seenStops = 0;
   }
 
   sample(state: GameState) {
     const t = Math.round(elapsedMs(state));
+    // Each newly cleared stop closes a split at the current elapsed time.
+    while (this.seenStops < state.stopsCompleted) {
+      this.splits.push(t);
+      this.seenStops += 1;
+    }
     const p = Number(mapProgressOf(state).toFixed(4));
     const last = this.samples[this.samples.length - 1];
     if (!last) {
@@ -103,6 +120,16 @@ export class GhostRecorder {
 
   finish(state: GameState): Ghost {
     this.sample(state);
-    return { totalMs: Math.round(elapsedMs(state)), stops: state.stopsCompleted, samples: this.samples };
+    return {
+      totalMs: Math.round(elapsedMs(state)),
+      stops: state.stopsCompleted,
+      samples: this.samples,
+      splits: this.splits,
+    };
+  }
+
+  /** Splits recorded so far, for the live split flash. */
+  currentSplits(): number[] {
+    return this.splits;
   }
 }

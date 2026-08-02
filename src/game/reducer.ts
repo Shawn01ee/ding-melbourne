@@ -11,12 +11,14 @@ import { foldChar, isAnswerMatch, normalizeBase } from './normalize';
  */
 
 export type Phase = 'config' | 'countdown' | 'typing' | 'finished' | 'paused';
-export type Mode = 'full-route' | 'section' | 'sprint';
+export type Mode = 'full-route' | 'section' | 'sprint' | 'time-attack';
 export type FinishReason = 'completed' | 'time-up';
 
 export const SPRINT_MS = 60_000;
 /** Stops to clear in a Section run (PRD "10개 정류장 구간"). */
 export const SECTION_LENGTH = 10;
+/** Time Attack is deliberately short so a retry costs seconds, not minutes. */
+export const TIME_ATTACK_LENGTH = 5;
 
 export interface GameConfig {
   directionId: string;
@@ -161,6 +163,7 @@ function timeUpIfDue(state: GameState, at: number): GameState | null {
 export function runStopCount(state: GameState): number {
   const remaining = currentDirection(state).stops.length - state.config.startStopIndex;
   if (state.config.mode === 'section') return Math.min(SECTION_LENGTH, remaining);
+  if (state.config.mode === 'time-attack') return Math.min(TIME_ATTACK_LENGTH, remaining);
   return remaining;
 }
 
