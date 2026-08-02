@@ -472,6 +472,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
           typedProgress={typedProgress}
           ghost={raceGhost}
           ghostElapsedMs={elapsedMs(state)}
+          ghostRunning={state.phase === 'typing'}
         />
       </div>
       {splitFlash && (

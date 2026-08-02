@@ -3186,10 +3186,6 @@ kbd {
 }
 
 /* ---------- Ghost Challenge (race your best run) ---------- */
-.ghost-tram {
-  transform-box: fill-box;
-  transform-origin: center;
-}
 
 /* Hollow, dashed twin of the live tram: obviously a recording of you. */
 .ghost-body {

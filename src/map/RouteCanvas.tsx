@@ -28,6 +28,8 @@ interface RouteCanvasProps {
   /** Your best run for this setup, replayed as a translucent ghost tram. */
   ghost?: Ghost | null;
   ghostElapsedMs?: number;
+  /** True while the run is live, so the ghost clock may extrapolate. */
+  ghostRunning?: boolean;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -71,6 +73,7 @@ export function RouteCanvas({
   typedProgress,
   ghost = null,
   ghostElapsedMs = 0,
+  ghostRunning = false,
 }: RouteCanvasProps) {
   const direction = route.route.directions[directionIndex];
   const reducedMotion = usePrefersReducedMotion();
@@ -161,6 +164,35 @@ export function RouteCanvas({
       : null;
   const ghostSeparated =
     ghostPoint !== null && Math.hypot(ghostPoint.x - tram.x, ghostPoint.y - tram.y) * zoom > 66;
+
+  // The ghost's position is a pure function of elapsed time, but the prop only
+  // updates on ticks and keystrokes. Advance it imperatively between updates so
+  // the replay is smooth without re-rendering the whole map every frame.
+  const ghostRef = useRef<SVGGElement>(null);
+  const ghostBaseRef = useRef({ elapsed: ghostElapsedMs, at: 0 });
+  useEffect(() => {
+    ghostBaseRef.current = { elapsed: ghostElapsedMs, at: performance.now() };
+  }, [ghostElapsedMs]);
+  useEffect(() => {
+    if (!ghost || !ghostRunning || reducedMotion) return;
+    let frame = 0;
+    const step = () => {
+      const node = ghostRef.current;
+      if (node) {
+        const base = ghostBaseRef.current;
+        const elapsed = base.elapsed + (performance.now() - base.at);
+        const p = path.pointAt(path.remapProgress(ghostProgressAt(ghost, elapsed)));
+        const ghostScale = ((1 / zoom) * 1.28).toFixed(4);
+        node.setAttribute(
+          'transform',
+          `translate(${p.x} ${p.y}) scale(${ghostScale}) rotate(${p.angleDeg})`,
+        );
+      }
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [ghost, ghostRunning, reducedMotion, path, zoom]);
 
   // Follow camera: scale world by `zoom`, translate so the tram sits slightly
   // above centre, leaving breathing room for the overlaid driving console.
@@ -253,11 +285,12 @@ export function RouteCanvas({
 
         {ghostPoint && (
           <g
+            ref={ghostRef}
             className="ghost-tram"
-            style={{
-              transform: `translate(${ghostPoint.x}px, ${ghostPoint.y}px) scale(${(k * 1.28).toFixed(4)}) rotate(${ghostPoint.angleDeg}deg)`,
-              transition: reducedMotion ? 'none' : 'transform 0.2s linear',
-            }}
+            // SVG transform attribute, exactly like the live tram. A CSS
+            // transform here would be resolved against the element's own box,
+            // not the map's coordinate system, and land the ghost off the rail.
+            transform={`translate(${ghostPoint.x} ${ghostPoint.y}) scale(${(k * 1.28).toFixed(4)}) rotate(${ghostPoint.angleDeg})`}
             aria-hidden="true"
           >
             {/* Same silhouette as the live tram so the race reads at a glance,
