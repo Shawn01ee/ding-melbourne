@@ -452,7 +452,7 @@ export function Game({ routes, initialRoute }: { routes: RouteSummary[]; initial
           ghostElapsedMs={elapsedMs(state)}
         />
       </div>
-      <StopConsole state={state} dispatch={dispatch} />
+      <StopConsole state={state} dispatch={dispatch} ghost={raceGhost} />
 
       {state.phase === 'paused' && (
         <div className="pause-overlay" role="dialog" aria-modal="true" aria-label="Paused">

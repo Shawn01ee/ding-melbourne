@@ -46,6 +46,35 @@ export function ghostProgressAt(ghost: Ghost, t: number): number {
   return s[s.length - 1][1];
 }
 
+/**
+ * When did the ghost reach this map progress? The inverse of ghostProgressAt,
+ * and the basis of the live gap: (ghost time here) − (my time here) is how many
+ * milliseconds I am ahead (positive) or behind (negative) right now.
+ */
+export function ghostTimeAtProgress(ghost: Ghost, progress: number): number {
+  const s = ghost.samples;
+  if (s.length === 0) return 0;
+  if (progress <= s[0][1]) return s[0][0];
+  for (let i = 1; i < s.length; i++) {
+    if (s[i][1] >= progress) {
+      const [t0, p0] = s[i - 1];
+      const [t1, p1] = s[i];
+      const k = p1 > p0 ? (progress - p0) / (p1 - p0) : 0;
+      return t0 + (t1 - t0) * k;
+    }
+  }
+  return s[s.length - 1][0];
+}
+
+/**
+ * Live gap in ms: positive means you are ahead of your ghost. Returns null
+ * before the run starts or once the ghost has finished its recording.
+ */
+export function ghostGapMs(ghost: Ghost | null, myProgress: number, myElapsedMs: number): number | null {
+  if (!ghost || ghost.samples.length < 2 || myElapsedMs <= 0) return null;
+  return ghostTimeAtProgress(ghost, myProgress) - myElapsedMs;
+}
+
 /** True if `run` beats `prev` by the mode's ranking rule (or prev is absent). */
 export function ghostIsBetter(mode: string, run: Ghost, prev: Ghost | null): boolean {
   if (!prev) return true;

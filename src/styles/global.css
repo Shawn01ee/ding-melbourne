@@ -3191,15 +3191,84 @@ kbd {
   transform-origin: center;
 }
 
-.ghost-compare {
-  margin: 6px 0 0;
-  font-weight: 800;
-  font-size: 0.9rem;
+/* Hollow, dashed twin of the live tram: obviously a recording of you. */
+.ghost-body {
+  fill: var(--card);
+  fill-opacity: 0.55;
+  stroke: var(--charcoal);
+  stroke-opacity: 0.55;
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
 }
 
-.ghost-compare.ahead { color: var(--cockpit-green); }
-.ghost-compare.behind { color: var(--muted); }
-.ghost-compare.fresh { color: var(--muted); font-weight: 700; }
+.ghost-window {
+  fill: var(--charcoal);
+  fill-opacity: 0.22;
+}
+
+.ghost-pole {
+  stroke: var(--charcoal);
+  stroke-opacity: 0.4;
+  stroke-width: 2;
+}
+
+.ghost-label {
+  fill: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  paint-order: stroke;
+  stroke: var(--map-paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* Live time-attack gap in the cockpit stat card. */
+.stat-ghost dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-ghost.ahead dd { color: var(--cockpit-green); }
+.stat-ghost.behind dd { color: var(--wrong); }
+
+/* Result verdict badge, sitting with the driver rank. */
+.ghost-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.ghost-verdict b {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.ghost-verdict.ahead {
+  background: color-mix(in srgb, var(--cockpit-green) 16%, var(--card));
+  color: var(--cockpit-green);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cockpit-green) 45%, transparent);
+}
+
+.ghost-verdict.behind {
+  background: color-mix(in srgb, var(--wrong) 12%, var(--card));
+  color: var(--wrong);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--wrong) 38%, transparent);
+}
+
+.ghost-verdict.tied,
+.ghost-verdict.fresh {
+  background: var(--cream);
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  font-weight: 700;
+  text-transform: none;
+}
 
 /* ---------- Driver's Log (solo progression) ---------- */
 .driver-log {

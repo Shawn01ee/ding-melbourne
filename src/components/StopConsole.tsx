@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { inkForBackground } from '../brand';
+import type { Ghost } from '../game/ghost';
 import { charStatuses } from '../game/normalize';
 import type { GameAction, GameState } from '../game/reducer';
 import { targetText } from '../game/reducer';
@@ -10,9 +11,10 @@ import { StatCard } from './StatCard';
 interface StopConsoleProps {
   state: GameState;
   dispatch: (action: GameAction) => void;
+  ghost?: Ghost | null;
 }
 
-export function StopConsole({ state, dispatch }: StopConsoleProps) {
+export function StopConsole({ state, dispatch, ghost = null }: StopConsoleProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [shake, setShake] = useState(false);
@@ -136,7 +138,7 @@ export function StopConsole({ state, dispatch }: StopConsoleProps) {
   return (
     <>
       <section className={`console${shake ? ' shake' : ''}`} aria-label="Typing console">
-      <StatCard state={state} />
+      <StatCard state={state} ghost={ghost} />
       <p
         className={`console-hint${typingActive && !focused ? ' warn' : ''}`}
         aria-live="polite"

@@ -179,6 +179,29 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, au
           <span>Driver rank</span>
           <h1 className="result-title" id="result-title">{rank}</h1>
           {isNew && <span className="pb-badge">NEW PERSONAL BEST</span>}
+          {(() => {
+            if (!ghost || ghost.samples.length < 2) {
+              return <span className="ghost-verdict fresh">👻 Ghost saved — race it next run</span>;
+            }
+            if (sprint) {
+              const d = result.stops - ghost.stops;
+              if (d === 0) return <span className="ghost-verdict tied">👻 Tied with your ghost</span>;
+              return (
+                <span className={`ghost-verdict ${d > 0 ? 'ahead' : 'behind'}`}>
+                  {d > 0 ? '🏁 BEAT YOUR GHOST' : '👻 GHOST WON'}
+                  <b>{d > 0 ? '+' : '−'}{Math.abs(d)} stop{Math.abs(d) > 1 ? 's' : ''}</b>
+                </span>
+              );
+            }
+            const d = ghost.totalMs - result.timeMs; // positive = you were faster
+            if (Math.abs(d) < 50) return <span className="ghost-verdict tied">👻 Tied with your ghost</span>;
+            return (
+              <span className={`ghost-verdict ${d > 0 ? 'ahead' : 'behind'}`}>
+                {d > 0 ? '🏁 BEAT YOUR GHOST' : '👻 GHOST WON'}
+                <b>{d > 0 ? '−' : '+'}{(Math.abs(d) / 1000).toFixed(1)}s</b>
+              </span>
+            );
+          })()}
         </div>
 
         <dl className="result-grid">
@@ -216,26 +239,6 @@ export function ResultScreen({ state, routes, dispatch, theme, onToggleTheme, au
             : 'First run on this setup — benchmark set.'}
         </p>
 
-        {(() => {
-          if (!ghost || ghost.samples.length < 2) {
-            return <p className="ghost-compare fresh">👻 Ghost saved — race it next run.</p>;
-          }
-          if (sprint) {
-            const d = result.stops - ghost.stops;
-            return (
-              <p className={`ghost-compare ${d >= 0 ? 'ahead' : 'behind'}`}>
-                {d > 0 ? `👻 ${d} more stop${d > 1 ? 's' : ''} than your ghost` : d < 0 ? `👻 ${-d} stop${-d > 1 ? 's' : ''} behind your ghost` : '👻 Tied with your ghost'}
-              </p>
-            );
-          }
-          const d = ghost.totalMs - result.timeMs; // positive = you were faster
-          const secs = (Math.abs(d) / 1000).toFixed(1);
-          return (
-            <p className={`ghost-compare ${d >= 0 ? 'ahead' : 'behind'}`}>
-              {d > 0 ? `🏁 ${secs}s faster than your ghost` : d < 0 ? `👻 ${secs}s behind your ghost` : '👻 Tied with your ghost'}
-            </p>
-          );
-        })()}
 
         <div className="result-actions">
           <button

@@ -159,6 +159,8 @@ export function RouteCanvas({
     ghost && ghost.samples.length > 1
       ? path.pointAt(path.remapProgress(ghostProgressAt(ghost, ghostElapsedMs)))
       : null;
+  const ghostSeparated =
+    ghostPoint !== null && Math.hypot(ghostPoint.x - tram.x, ghostPoint.y - tram.y) * zoom > 66;
 
   // Follow camera: scale world by `zoom`, translate so the tram sits slightly
   // above centre, leaving breathing room for the overlaid driving console.
@@ -253,13 +255,26 @@ export function RouteCanvas({
           <g
             className="ghost-tram"
             style={{
-              transform: `translate(${ghostPoint.x}px, ${ghostPoint.y}px) scale(${(k * 1.16).toFixed(4)}) rotate(${ghostPoint.angleDeg}deg)`,
+              transform: `translate(${ghostPoint.x}px, ${ghostPoint.y}px) scale(${(k * 1.28).toFixed(4)}) rotate(${ghostPoint.angleDeg}deg)`,
               transition: reducedMotion ? 'none' : 'transform 0.2s linear',
             }}
             aria-hidden="true"
           >
-            <rect x={-26} y={-11} width={52} height={22} rx={8} fill="#17211D" opacity={0.14} />
-            <rect x={-26} y={-11} width={52} height={22} rx={8} fill="none" stroke="#17211D" strokeOpacity={0.4} strokeWidth={2} strokeDasharray="4 3" />
+            {/* Same silhouette as the live tram so the race reads at a glance,
+                but hollow and dashed: clearly a recording, not a second player. */}
+            <rect className="ghost-body" x={-26} y={-11} width={52} height={22} rx={8} />
+            <rect className="ghost-window" x={-20} y={-6} width={9} height={8} rx={2} />
+            <rect className="ghost-window" x={-7} y={-6} width={9} height={8} rx={2} />
+            <rect className="ghost-window" x={9} y={-7} width={13} height={10} rx={3} />
+            <line className="ghost-pole" x1={-4} y1={-11} x2={-4} y2={-17} />
+            <line className="ghost-pole" x1={-11} y1={-17} x2={3} y2={-17} />
+            {/* Only name the ghost once it has separated from the live tram;
+                neck-and-neck the label would collide with the stop name. */}
+            {ghostSeparated && (
+              <text className="ghost-label" x={0} y={-26} textAnchor="middle" transform={`rotate(${-ghostPoint.angleDeg})`}>
+                YOUR BEST
+              </text>
+            )}
           </g>
         )}
 
